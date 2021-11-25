@@ -10,11 +10,16 @@ namespace py = pybind11;
 PYBIND11_MODULE(pyspeexaec, m) {
   m.doc() = "Python Speex AEC";
   py::class_<EchoCanceller>(m, "EchoCanceller")
-      .def(py::init<int, int, int, int, int>(),
-           py::arg("frame_size") = 256,
-           py::arg("filter_length") = 2048,
-           py::arg("sample_rate") = 16000,
-           py::arg("mics") = 1,
-           py::arg("speakers") = 1)
-      .def("process", &EchoCanceller::process, py::arg("rec"), py::arg("ref"));
+      .def(py::init<int, int, int, int, int, bool>(), py::arg("frame_size") = 160, py::arg("filter_length") = 1600,
+           py::arg("sample_rate") = 16000, py::arg("mics") = 1, py::arg("speakers") = 1,
+           py::arg("use_preprocess") = false)
+      .def("process",
+           static_cast<std::string (EchoCanceller::*)(const std::string &near, const std::string &far)>(
+               &EchoCanceller::process),
+           py::arg("rec"), py::arg("ref"))
+      .def("process",
+           static_cast<py::array_t<DType> (EchoCanceller::*)(
+               py::array_t<DType, py::array::c_style | py::array::forcecast> near,
+               py::array_t<DType, py::array::c_style | py::array::forcecast> far)>(&EchoCanceller::process),
+           py::arg("rec"), py::arg("ref"), py::return_value_policy::move);
 }
