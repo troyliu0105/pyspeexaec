@@ -1,4 +1,4 @@
-/* Copyright (C) 2002 Jean-Marc Valin 
+/* Copyright (C) 2002 Jean-Marc Valin
    File: speex_jitter.h
 
    Adaptive jitter buffer for Speex
@@ -6,18 +6,18 @@
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
-   
+
    - Redistributions of source code must retain the above copyright
    notice, this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright
    notice, this list of conditions and the following disclaimer in the
    documentation and/or other materials provided with the distribution.
-   
+
    - Neither the name of the Xiph.org Foundation nor the names of its
    contributors may be used to endorse or promote products derived from
    this software without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -54,23 +54,23 @@ TODO:
 #endif
 
 #include "arch.h"
-#include "speex/speex_jitter.h"
 #include "os_support.h"
+#include "speex/speex_jitter.h"
 
 #ifndef NULL
 #define NULL 0
 #endif
 
-#define SPEEX_JITTER_MAX_BUFFER_SIZE 200   /**< Maximum number of packets in jitter buffer */
+#define SPEEX_JITTER_MAX_BUFFER_SIZE 200 /**< Maximum number of packets in jitter buffer */
 
-#define TSUB(a, b) ((spx_int32_t)((a)-(b)))
+#define TSUB(a, b) ((spx_int32_t)((a) - (b)))
 
-#define GT32(a, b) (((spx_int32_t)((a)-(b)))>0)
-#define GE32(a, b) (((spx_int32_t)((a)-(b)))>=0)
-#define LT32(a, b) (((spx_int32_t)((a)-(b)))<0)
-#define LE32(a, b) (((spx_int32_t)((a)-(b)))<=0)
+#define GT32(a, b) (((spx_int32_t)((a) - (b))) > 0)
+#define GE32(a, b) (((spx_int32_t)((a) - (b))) >= 0)
+#define LT32(a, b) (((spx_int32_t)((a) - (b))) < 0)
+#define LE32(a, b) (((spx_int32_t)((a) - (b))) <= 0)
 
-#define ROUND_DOWN(x, step) ((x)<0 ? ((x)-(step)+1)/(step)*(step) : (x)/(step)*(step))
+#define ROUND_DOWN(x, step) ((x) < 0 ? ((x) - (step) + 1) / (step) * (step) : (x) / (step) * (step))
 
 #define MAX_TIMINGS 40
 #define MAX_BUFFERS 3
@@ -78,10 +78,10 @@ TODO:
 
 /** Buffer that keeps the time of arrival of the latest packets */
 struct TimingBuffer {
-  int filled;                         /**< Number of entries occupied in "timing" and "counts"*/
-  int curr_count;                     /**< Number of packet timings we got (including those we discarded) */
-  spx_int32_t timing[MAX_TIMINGS];    /**< Sorted list of all timings ("latest" packets first) */
-  spx_int16_t counts[MAX_TIMINGS];    /**< Order the packets were put in (will be used for short-term estimate) */
+  int filled;                      /**< Number of entries occupied in "timing" and "counts"*/
+  int curr_count;                  /**< Number of packet timings we got (including those we discarded) */
+  spx_int32_t timing[MAX_TIMINGS]; /**< Sorted list of all timings ("latest" packets first) */
+  spx_int16_t counts[MAX_TIMINGS]; /**< Order the packets were put in (will be used for short-term estimate) */
 };
 
 static void tb_init(struct TimingBuffer *tb) {
@@ -126,54 +126,44 @@ static void tb_add(struct TimingBuffer *tb, spx_int16_t timing) {
 
 /** Jitter buffer structure */
 struct JitterBuffer_ {
-  spx_uint32_t pointer_timestamp;                             /**< Timestamp of what we will *get* next */
+  spx_uint32_t pointer_timestamp; /**< Timestamp of what we will *get* next */
   spx_uint32_t
-      last_returned_timestamp;                       /**< Useful for getting the next packet with the same timestamp (for fragmented media) */
-  spx_uint32_t next_stop;                                     /**< Estimated time the next get() will be called */
+      last_returned_timestamp; /**< Useful for getting the next packet with the same timestamp (for fragmented media) */
+  spx_uint32_t next_stop;      /**< Estimated time the next get() will be called */
 
-  spx_int32_t
-      buffered;                                       /**< Amount of data we think is still buffered by the application (timestamp units)*/
+  spx_int32_t buffered; /**< Amount of data we think is still buffered by the application (timestamp units)*/
 
-  JitterBufferPacket packets[SPEEX_JITTER_MAX_BUFFER_SIZE];   /**< Packets stored in the buffer */
-  spx_uint32_t arrival[SPEEX_JITTER_MAX_BUFFER_SIZE
-  ];         /**< Packet arrival time (0 means it was late, even though it's a valid timestamp) */
+  JitterBufferPacket packets[SPEEX_JITTER_MAX_BUFFER_SIZE]; /**< Packets stored in the buffer */
+  spx_uint32_t arrival[SPEEX_JITTER_MAX_BUFFER_SIZE]; /**< Packet arrival time (0 means it was late, even though it's a
+                                                         valid timestamp) */
 
-  void (*destroy)(void *);                                   /**< Callback for destroying a packet */
+  void (*destroy)(void *); /**< Callback for destroying a packet */
 
-  spx_int32_t
-      delay_step;                                     /**< Size of the steps when adjusting buffering (timestamp units) */
-  spx_int32_t concealment_size;                               /**< Size of the packet loss concealment "units" */
-  int reset_state;                                            /**< True if state was just reset        */
-  int
-      buffer_margin;                                          /**< How many frames we want to keep in the buffer (lower bound) */
-  int
-      late_cutoff;                                            /**< How late must a packet be for it not to be considered at all */
-  int
-      interp_requested;                                       /**< An interpolation is requested by speex_jitter_update_delay() */
-  int
-      auto_adjust;                                            /**< Whether to automatically adjust the delay at any time */
+  spx_int32_t delay_step;       /**< Size of the steps when adjusting buffering (timestamp units) */
+  spx_int32_t concealment_size; /**< Size of the packet loss concealment "units" */
+  int reset_state;              /**< True if state was just reset        */
+  int buffer_margin;            /**< How many frames we want to keep in the buffer (lower bound) */
+  int late_cutoff;              /**< How late must a packet be for it not to be considered at all */
+  int interp_requested;         /**< An interpolation is requested by speex_jitter_update_delay() */
+  int auto_adjust;              /**< Whether to automatically adjust the delay at any time */
 
-  struct TimingBuffer _tb[MAX_BUFFERS];                       /**< Don't use those directly */
+  struct TimingBuffer _tb[MAX_BUFFERS]; /**< Don't use those directly */
   struct TimingBuffer
-      *timeBuffers[MAX_BUFFERS];              /**< Storing arrival time of latest frames so we can compute some stats */
-  int
-      window_size;                                            /**< Total window over which the late frames are counted */
-  int subwindow_size;                                         /**< Sub-window size for faster computation  */
-  int
-      max_late_rate;                                          /**< Absolute maximum amount of late packets tolerable (in percent) */
-  int
-      latency_tradeoff;                                       /**< Latency equivalent of losing one percent of packets */
-  int
-      auto_tradeoff;                                          /**< Latency equivalent of losing one percent of packets (automatic default) */
+      *timeBuffers[MAX_BUFFERS]; /**< Storing arrival time of latest frames so we can compute some stats */
+  int window_size;               /**< Total window over which the late frames are counted */
+  int subwindow_size;            /**< Sub-window size for faster computation  */
+  int max_late_rate;             /**< Absolute maximum amount of late packets tolerable (in percent) */
+  int latency_tradeoff;          /**< Latency equivalent of losing one percent of packets */
+  int auto_tradeoff;             /**< Latency equivalent of losing one percent of packets (automatic default) */
 
-  int lost_count;                                             /**< Number of consecutive lost packets  */
+  int lost_count; /**< Number of consecutive lost packets  */
 };
 
-/** Based on available data, this computes the optimal delay for the jitter buffer. 
+/** Based on available data, this computes the optimal delay for the jitter buffer.
    The optimised function is in timestamp units and is:
    cost = delay + late_factor*[number of frames that would be late if we used that delay]
    @param tb Array of buffers
-   @param late_factor Equivalent cost of a late frame (in timestamp units) 
+   @param late_factor Equivalent cost of a late frame (in timestamp units)
  */
 static spx_int16_t compute_opt_delay(JitterBuffer *jitter) {
   int i;
@@ -263,10 +253,9 @@ static spx_int16_t compute_opt_delay(JitterBuffer *jitter) {
   return opt;
 }
 
-
 /** Initialise jitter buffer */
 EXPORT JitterBuffer *jitter_buffer_init(int step_size) {
-  JitterBuffer *jitter = (JitterBuffer *) speex_alloc(sizeof(JitterBuffer));
+  JitterBuffer *jitter = (JitterBuffer *)speex_alloc(sizeof(JitterBuffer));
   if (jitter) {
     int i;
     spx_int32_t tmp;
@@ -348,7 +337,6 @@ static void shift_timings(JitterBuffer *jitter, spx_int16_t amount) {
   }
 }
 
-
 /** Put one packet into the jitter buffer */
 EXPORT void jitter_buffer_put(JitterBuffer *jitter, const JitterBufferPacket *packet) {
   int i, j;
@@ -359,8 +347,8 @@ EXPORT void jitter_buffer_put(JitterBuffer *jitter, const JitterBufferPacket *pa
   if (!jitter->reset_state) {
     for (i = 0; i < SPEEX_JITTER_MAX_BUFFER_SIZE; i++) {
       /* Make sure we don't discard a "just-late" packet in case we want to play it next (if we interpolate). */
-      if (jitter->packets[i].data
-          && LE32(jitter->packets[i].timestamp + jitter->packets[i].span, jitter->pointer_timestamp)) {
+      if (jitter->packets[i].data &&
+          LE32(jitter->packets[i].timestamp + jitter->packets[i].span, jitter->pointer_timestamp)) {
         /*fprintf (stderr, "cleaned (not played)\n");*/
         if (jitter->destroy)
           jitter->destroy(jitter->packets[i].data);
@@ -374,8 +362,7 @@ EXPORT void jitter_buffer_put(JitterBuffer *jitter, const JitterBufferPacket *pa
   /*fprintf(stderr, "arrival: %d %d %d\n", packet->timestamp, jitter->next_stop, jitter->pointer_timestamp);*/
   /* Check if packet is late (could still be useful though) */
   if (!jitter->reset_state && LT32(packet->timestamp, jitter->next_stop)) {
-    update_timings(jitter,
-                   ((spx_int32_t) packet->timestamp) - ((spx_int32_t) jitter->next_stop) - jitter->buffer_margin);
+    update_timings(jitter, ((spx_int32_t)packet->timestamp) - ((spx_int32_t)jitter->next_stop) - jitter->buffer_margin);
     late = 1;
   } else {
     late = 0;
@@ -411,14 +398,15 @@ EXPORT void jitter_buffer_put(JitterBuffer *jitter, const JitterBufferPacket *pa
       else
         speex_free(jitter->packets[i].data);
       jitter->packets[i].data = NULL;
-      /*fprintf (stderr, "Buffer is full, discarding earliest frame %d (currently at %d)\n", timestamp, jitter->pointer_timestamp);*/
+      /*fprintf (stderr, "Buffer is full, discarding earliest frame %d (currently at %d)\n", timestamp,
+       * jitter->pointer_timestamp);*/
     }
 
     /* Copy packet in buffer */
     if (jitter->destroy) {
       jitter->packets[i].data = packet->data;
     } else {
-      jitter->packets[i].data = (char *) speex_alloc(packet->len);
+      jitter->packets[i].data = (char *)speex_alloc(packet->len);
       for (j = 0; j < packet->len; j++)
         jitter->packets[i].data[j] = packet->data[j];
     }
@@ -432,13 +420,10 @@ EXPORT void jitter_buffer_put(JitterBuffer *jitter, const JitterBufferPacket *pa
     else
       jitter->arrival[i] = jitter->next_stop;
   }
-
 }
 
 /** Get one packet from the jitter buffer */
-EXPORT int jitter_buffer_get(JitterBuffer *jitter,
-                             JitterBufferPacket *packet,
-                             spx_int32_t desired_span,
+EXPORT int jitter_buffer_get(JitterBuffer *jitter, JitterBufferPacket *packet, spx_int32_t desired_span,
                              spx_int32_t *start_offset) {
   int i;
   unsigned int j;
@@ -491,16 +476,16 @@ EXPORT int jitter_buffer_get(JitterBuffer *jitter,
 
   /* Search the buffer for a packet with the right timestamp and spanning the whole current chunk */
   for (i = 0; i < SPEEX_JITTER_MAX_BUFFER_SIZE; i++) {
-    if (jitter->packets[i].data && jitter->packets[i].timestamp == jitter->pointer_timestamp
-        && GE32(jitter->packets[i].timestamp + jitter->packets[i].span, jitter->pointer_timestamp + desired_span))
+    if (jitter->packets[i].data && jitter->packets[i].timestamp == jitter->pointer_timestamp &&
+        GE32(jitter->packets[i].timestamp + jitter->packets[i].span, jitter->pointer_timestamp + desired_span))
       break;
   }
 
   /* If no match, try for an "older" packet that still spans (fully) the current chunk */
   if (i == SPEEX_JITTER_MAX_BUFFER_SIZE) {
     for (i = 0; i < SPEEX_JITTER_MAX_BUFFER_SIZE; i++) {
-      if (jitter->packets[i].data && LE32(jitter->packets[i].timestamp, jitter->pointer_timestamp)
-          && GE32(jitter->packets[i].timestamp + jitter->packets[i].span, jitter->pointer_timestamp + desired_span))
+      if (jitter->packets[i].data && LE32(jitter->packets[i].timestamp, jitter->pointer_timestamp) &&
+          GE32(jitter->packets[i].timestamp + jitter->packets[i].span, jitter->pointer_timestamp + desired_span))
         break;
     }
   }
@@ -508,8 +493,8 @@ EXPORT int jitter_buffer_get(JitterBuffer *jitter,
   /* If still no match, try for an "older" packet that spans part of the current chunk */
   if (i == SPEEX_JITTER_MAX_BUFFER_SIZE) {
     for (i = 0; i < SPEEX_JITTER_MAX_BUFFER_SIZE; i++) {
-      if (jitter->packets[i].data && LE32(jitter->packets[i].timestamp, jitter->pointer_timestamp)
-          && GT32(jitter->packets[i].timestamp + jitter->packets[i].span, jitter->pointer_timestamp))
+      if (jitter->packets[i].data && LE32(jitter->packets[i].timestamp, jitter->pointer_timestamp) &&
+          GT32(jitter->packets[i].timestamp + jitter->packets[i].span, jitter->pointer_timestamp))
         break;
     }
   }
@@ -522,10 +507,10 @@ EXPORT int jitter_buffer_get(JitterBuffer *jitter,
     int besti = 0;
     for (i = 0; i < SPEEX_JITTER_MAX_BUFFER_SIZE; i++) {
       /* check if packet starts within current chunk */
-      if (jitter->packets[i].data && LT32(jitter->packets[i].timestamp, jitter->pointer_timestamp + desired_span)
-          && GE32(jitter->packets[i].timestamp, jitter->pointer_timestamp)) {
-        if (!found || LT32(jitter->packets[i].timestamp, best_time)
-            || (jitter->packets[i].timestamp == best_time && GT32(jitter->packets[i].span, best_span))) {
+      if (jitter->packets[i].data && LT32(jitter->packets[i].timestamp, jitter->pointer_timestamp + desired_span) &&
+          GE32(jitter->packets[i].timestamp, jitter->pointer_timestamp)) {
+        if (!found || LT32(jitter->packets[i].timestamp, best_time) ||
+            (jitter->packets[i].timestamp == best_time && GT32(jitter->packets[i].span, best_span))) {
           best_time = jitter->packets[i].timestamp;
           best_span = jitter->packets[i].span;
           besti = i;
@@ -535,7 +520,8 @@ EXPORT int jitter_buffer_get(JitterBuffer *jitter,
     }
     if (found) {
       i = besti;
-      /*fprintf (stderr, "incomplete: %d %d %d %d\n", jitter->packets[i].timestamp, jitter->pointer_timestamp, chunk_size, jitter->packets[i].span);*/
+      /*fprintf (stderr, "incomplete: %d %d %d %d\n", jitter->packets[i].timestamp, jitter->pointer_timestamp,
+       * chunk_size, jitter->packets[i].span);*/
     }
   }
 
@@ -548,11 +534,9 @@ EXPORT int jitter_buffer_get(JitterBuffer *jitter,
 
     /* In this case, 0 isn't as a valid timestamp */
     if (jitter->arrival[i] != 0) {
-      update_timings(jitter,
-                     ((spx_int32_t) jitter->packets[i].timestamp) - ((spx_int32_t) jitter->arrival[i])
-                         - jitter->buffer_margin);
+      update_timings(jitter, ((spx_int32_t)jitter->packets[i].timestamp) - ((spx_int32_t)jitter->arrival[i]) -
+                                 jitter->buffer_margin);
     }
-
 
     /* Copy packet */
     if (jitter->destroy) {
@@ -571,7 +555,7 @@ EXPORT int jitter_buffer_get(JitterBuffer *jitter,
     }
     jitter->packets[i].data = NULL;
     /* Set timestamp and span (if requested) */
-    offset = (spx_int32_t) jitter->packets[i].timestamp - (spx_int32_t) jitter->pointer_timestamp;
+    offset = (spx_int32_t)jitter->packets[i].timestamp - (spx_int32_t)jitter->pointer_timestamp;
     if (start_offset != NULL)
       *start_offset = offset;
     else if (offset != 0)
@@ -593,7 +577,6 @@ EXPORT int jitter_buffer_get(JitterBuffer *jitter,
 
     return JITTER_BUFFER_OK;
   }
-
 
   /* If we haven't found anything worth returning */
 
@@ -633,7 +616,6 @@ EXPORT int jitter_buffer_get(JitterBuffer *jitter,
     return JITTER_BUFFER_MISSING;
     /*fprintf (stderr, "Normal loss\n");*/
   }
-
 }
 
 EXPORT int jitter_buffer_get_another(JitterBuffer *jitter, JitterBufferPacket *packet) {
@@ -697,9 +679,7 @@ EXPORT int jitter_buffer_update_delay(JitterBuffer *jitter, JitterBufferPacket *
 }
 
 /** Get pointer timestamp of jitter buffer */
-EXPORT int jitter_buffer_get_pointer_timestamp(JitterBuffer *jitter) {
-  return jitter->pointer_timestamp;
-}
+EXPORT int jitter_buffer_get_pointer_timestamp(JitterBuffer *jitter) { return jitter->pointer_timestamp; }
 
 EXPORT void jitter_buffer_tick(JitterBuffer *jitter) {
   /* Automatically-adjust the buffering delay if requested */
@@ -725,16 +705,15 @@ EXPORT void jitter_buffer_remaining_span(JitterBuffer *jitter, spx_uint32_t rem)
   jitter->next_stop = jitter->pointer_timestamp - rem;
 }
 
-
 /* Used like the ioctl function to control the jitter buffer parameters */
 EXPORT int jitter_buffer_ctl(JitterBuffer *jitter, int request, void *ptr) {
   int count, i;
   switch (request) {
   case JITTER_BUFFER_SET_MARGIN:
-    jitter->buffer_margin = *(spx_int32_t *) ptr;
+    jitter->buffer_margin = *(spx_int32_t *)ptr;
     break;
   case JITTER_BUFFER_GET_MARGIN:
-    *(spx_int32_t *) ptr = jitter->buffer_margin;
+    *(spx_int32_t *)ptr = jitter->buffer_margin;
     break;
   case JITTER_BUFFER_GET_AVALIABLE_COUNT:
     count = 0;
@@ -743,39 +722,39 @@ EXPORT int jitter_buffer_ctl(JitterBuffer *jitter, int request, void *ptr) {
         count++;
       }
     }
-    *(spx_int32_t *) ptr = count;
+    *(spx_int32_t *)ptr = count;
     break;
   case JITTER_BUFFER_SET_DESTROY_CALLBACK:
-    jitter->destroy = (void (*)(void *)) ptr;
+    jitter->destroy = (void(*)(void *))ptr;
     break;
   case JITTER_BUFFER_GET_DESTROY_CALLBACK:
-    *(void (**)(void *)) ptr = jitter->destroy;
+    *(void(**)(void *))ptr = jitter->destroy;
     break;
   case JITTER_BUFFER_SET_DELAY_STEP:
-    jitter->delay_step = *(spx_int32_t *) ptr;
+    jitter->delay_step = *(spx_int32_t *)ptr;
     break;
   case JITTER_BUFFER_GET_DELAY_STEP:
-    *(spx_int32_t *) ptr = jitter->delay_step;
+    *(spx_int32_t *)ptr = jitter->delay_step;
     break;
   case JITTER_BUFFER_SET_CONCEALMENT_SIZE:
-    jitter->concealment_size = *(spx_int32_t *) ptr;
+    jitter->concealment_size = *(spx_int32_t *)ptr;
     break;
   case JITTER_BUFFER_GET_CONCEALMENT_SIZE:
-    *(spx_int32_t *) ptr = jitter->concealment_size;
+    *(spx_int32_t *)ptr = jitter->concealment_size;
     break;
   case JITTER_BUFFER_SET_MAX_LATE_RATE:
-    jitter->max_late_rate = *(spx_int32_t *) ptr;
+    jitter->max_late_rate = *(spx_int32_t *)ptr;
     jitter->window_size = 100 * TOP_DELAY / jitter->max_late_rate;
     jitter->subwindow_size = jitter->window_size / MAX_BUFFERS;
     break;
   case JITTER_BUFFER_GET_MAX_LATE_RATE:
-    *(spx_int32_t *) ptr = jitter->max_late_rate;
+    *(spx_int32_t *)ptr = jitter->max_late_rate;
     break;
   case JITTER_BUFFER_SET_LATE_COST:
-    jitter->latency_tradeoff = *(spx_int32_t *) ptr;
+    jitter->latency_tradeoff = *(spx_int32_t *)ptr;
     break;
   case JITTER_BUFFER_GET_LATE_COST:
-    *(spx_int32_t *) ptr = jitter->latency_tradeoff;
+    *(spx_int32_t *)ptr = jitter->latency_tradeoff;
     break;
   default:
     speex_warning_int("Unknown jitter_buffer_ctl request: ", request);
@@ -783,4 +762,3 @@ EXPORT int jitter_buffer_ctl(JitterBuffer *jitter, int request, void *ptr) {
   }
   return 0;
 }
-

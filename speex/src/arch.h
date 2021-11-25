@@ -7,18 +7,18 @@
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
-   
+
    - Redistributions of source code must retain the above copyright
    notice, this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright
    notice, this list of conditions and the following disclaimer in the
    documentation and/or other materials provided with the distribution.
-   
+
    - Neither the name of the Xiph.org Foundation nor the names of its
    contributors may be used to endorse or promote products derived from
    this software without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -44,7 +44,7 @@
 #ifdef _USE_SSE
 #error SSE is only for floating-point
 #endif
-#if ((defined (ARM4_ASM)||defined (ARM4_ASM)) && defined(BFIN_ASM)) || (defined (ARM4_ASM)&&defined(ARM5E_ASM))
+#if ((defined(ARM4_ASM) || defined(ARM4_ASM)) && defined(BFIN_ASM)) || (defined(ARM4_ASM) && defined(ARM5E_ASM))
 #error Make up your mind. What CPU do you have?
 #endif
 #ifdef VORBIS_PSYCHO
@@ -56,7 +56,7 @@
 #ifndef FLOATING_POINT
 #error You now need to define either FIXED_POINT or FLOATING_POINT
 #endif
-#if defined (ARM4_ASM) || defined(ARM5E_ASM) || defined(BFIN_ASM)
+#if defined(ARM4_ASM) || defined(ARM5E_ASM) || defined(BFIN_ASM)
 #error I suppose you can have a [ARM4/ARM5E/Blackfin] that has float instructions?
 #endif
 #ifdef FIXED_POINT_DEBUG
@@ -69,13 +69,13 @@
 #include "speex/speexdsp_types.h"
 #endif
 
-#define ABS(x) ((x) < 0 ? (-(x)) : (x))      /**< Absolute integer value. */
-#define ABS16(x) ((x) < 0 ? (-(x)) : (x))    /**< Absolute 16-bit value.  */
-#define MIN16(a, b) ((a) < (b) ? (a) : (b))   /**< Maximum 16-bit value.   */
-#define MAX16(a, b) ((a) > (b) ? (a) : (b))   /**< Maximum 16-bit value.   */
-#define ABS32(x) ((x) < 0 ? (-(x)) : (x))    /**< Absolute 32-bit value.  */
-#define MIN32(a, b) ((a) < (b) ? (a) : (b))   /**< Maximum 32-bit value.   */
-#define MAX32(a, b) ((a) > (b) ? (a) : (b))   /**< Maximum 32-bit value.   */
+#define ABS(x) ((x) < 0 ? (-(x)) : (x))     /**< Absolute integer value. */
+#define ABS16(x) ((x) < 0 ? (-(x)) : (x))   /**< Absolute 16-bit value.  */
+#define MIN16(a, b) ((a) < (b) ? (a) : (b)) /**< Maximum 16-bit value.   */
+#define MAX16(a, b) ((a) > (b) ? (a) : (b)) /**< Maximum 16-bit value.   */
+#define ABS32(x) ((x) < 0 ? (-(x)) : (x))   /**< Absolute 32-bit value.  */
+#define MIN32(a, b) ((a) < (b) ? (a) : (b)) /**< Maximum 32-bit value.   */
+#define MAX32(a, b) ((a) > (b) ? (a) : (b)) /**< Maximum 32-bit value.   */
 
 #ifdef FIXED_POINT
 
@@ -88,23 +88,22 @@ typedef spx_word32_t spx_sig_t;
 
 #define Q15ONE 32767
 
-#define LPC_SCALING  8192
-#define SIG_SCALING  16384
-#define LSP_SCALING  8192.
+#define LPC_SCALING 8192
+#define SIG_SCALING 16384
+#define LSP_SCALING 8192.
 #define GAMMA_SCALING 32768.
 #define GAIN_SCALING 64
 #define GAIN_SCALING_1 0.015625
 
-#define LPC_SHIFT    13
-#define LSP_SHIFT    13
-#define SIG_SHIFT    14
-#define GAIN_SHIFT   6
+#define LPC_SHIFT 13
+#define LSP_SHIFT 13
+#define SIG_SHIFT 14
+#define GAIN_SHIFT 6
 
 #define VERY_SMALL 0
 #define VERY_LARGE32 ((spx_word32_t)2147483647)
 #define VERY_LARGE16 ((spx_word16_t)32767)
 #define Q15_ONE ((spx_word16_t)32767)
-
 
 #ifdef FIXED_DEBUG
 #include "fixed_debug.h"
@@ -114,14 +113,13 @@ typedef spx_word32_t spx_sig_t;
 
 #ifdef ARM5E_ASM
 #include "fixed_arm5e.h"
-#elif defined (ARM4_ASM)
+#elif defined(ARM4_ASM)
 #include "fixed_arm4.h"
-#elif defined (BFIN_ASM)
+#elif defined(BFIN_ASM)
 #include "fixed_bfin.h"
 #endif
 
 #endif
-
 
 #else
 
@@ -133,9 +131,9 @@ typedef float spx_word16_t;
 typedef float spx_word32_t;
 
 #define Q15ONE 1.0f
-#define LPC_SCALING  1.f
-#define SIG_SCALING  1.f
-#define LSP_SCALING  1.f
+#define LPC_SCALING 1.f
+#define SIG_SCALING 1.f
+#define LSP_SCALING 1.f
 #define GAMMA_SCALING 1.f
 #define GAIN_SCALING 1.f
 #define GAIN_SCALING_1 1.f
@@ -163,50 +161,50 @@ typedef float spx_word32_t;
 #define SATURATE32(x, a) (x)
 #define SATURATE32PSHR(x, shift, a) (x)
 
-#define PSHR(a, shift)       (a)
-#define SHR(a, shift)       (a)
-#define SHL(a, shift)       (a)
+#define PSHR(a, shift) (a)
+#define SHR(a, shift) (a)
+#define SHL(a, shift) (a)
 #define SATURATE(x, a) (x)
 
-#define ADD16(a, b) ((a)+(b))
-#define SUB16(a, b) ((a)-(b))
-#define ADD32(a, b) ((a)+(b))
-#define SUB32(a, b) ((a)-(b))
-#define MULT16_16_16(a, b)     ((a)*(b))
-#define MULT16_16(a, b)     ((spx_word32_t)(a)*(spx_word32_t)(b))
-#define MAC16_16(c, a, b)     ((c)+(spx_word32_t)(a)*(spx_word32_t)(b))
+#define ADD16(a, b) ((a) + (b))
+#define SUB16(a, b) ((a) - (b))
+#define ADD32(a, b) ((a) + (b))
+#define SUB32(a, b) ((a) - (b))
+#define MULT16_16_16(a, b) ((a) * (b))
+#define MULT16_16(a, b) ((spx_word32_t)(a) * (spx_word32_t)(b))
+#define MAC16_16(c, a, b) ((c) + (spx_word32_t)(a) * (spx_word32_t)(b))
 
-#define MULT16_32_Q11(a, b)     ((a)*(b))
-#define MULT16_32_Q13(a, b)     ((a)*(b))
-#define MULT16_32_Q14(a, b)     ((a)*(b))
-#define MULT16_32_Q15(a, b)     ((a)*(b))
-#define MULT16_32_P15(a, b)     ((a)*(b))
+#define MULT16_32_Q11(a, b) ((a) * (b))
+#define MULT16_32_Q13(a, b) ((a) * (b))
+#define MULT16_32_Q14(a, b) ((a) * (b))
+#define MULT16_32_Q15(a, b) ((a) * (b))
+#define MULT16_32_P15(a, b) ((a) * (b))
 
-#define MAC16_32_Q11(c, a, b)     ((c)+(a)*(b))
-#define MAC16_32_Q15(c, a, b)     ((c)+(a)*(b))
+#define MAC16_32_Q11(c, a, b) ((c) + (a) * (b))
+#define MAC16_32_Q15(c, a, b) ((c) + (a) * (b))
 
-#define MAC16_16_Q11(c, a, b)     ((c)+(a)*(b))
-#define MAC16_16_Q13(c, a, b)     ((c)+(a)*(b))
-#define MAC16_16_P13(c, a, b)     ((c)+(a)*(b))
-#define MULT16_16_Q11_32(a, b)     ((a)*(b))
-#define MULT16_16_Q13(a, b)     ((a)*(b))
-#define MULT16_16_Q14(a, b)     ((a)*(b))
-#define MULT16_16_Q15(a, b)     ((a)*(b))
-#define MULT16_16_P15(a, b)     ((a)*(b))
-#define MULT16_16_P13(a, b)     ((a)*(b))
-#define MULT16_16_P14(a, b)     ((a)*(b))
+#define MAC16_16_Q11(c, a, b) ((c) + (a) * (b))
+#define MAC16_16_Q13(c, a, b) ((c) + (a) * (b))
+#define MAC16_16_P13(c, a, b) ((c) + (a) * (b))
+#define MULT16_16_Q11_32(a, b) ((a) * (b))
+#define MULT16_16_Q13(a, b) ((a) * (b))
+#define MULT16_16_Q14(a, b) ((a) * (b))
+#define MULT16_16_Q15(a, b) ((a) * (b))
+#define MULT16_16_P15(a, b) ((a) * (b))
+#define MULT16_16_P13(a, b) ((a) * (b))
+#define MULT16_16_P14(a, b) ((a) * (b))
 
-#define DIV32_16(a, b)     (((spx_word32_t)(a))/(spx_word16_t)(b))
-#define PDIV32_16(a, b)     (((spx_word32_t)(a))/(spx_word16_t)(b))
-#define DIV32(a, b)     (((spx_word32_t)(a))/(spx_word32_t)(b))
-#define PDIV32(a, b)     (((spx_word32_t)(a))/(spx_word32_t)(b))
+#define DIV32_16(a, b) (((spx_word32_t)(a)) / (spx_word16_t)(b))
+#define PDIV32_16(a, b) (((spx_word32_t)(a)) / (spx_word16_t)(b))
+#define DIV32(a, b) (((spx_word32_t)(a)) / (spx_word32_t)(b))
+#define PDIV32(a, b) (((spx_word32_t)(a)) / (spx_word32_t)(b))
 
 #endif
 
-#if defined (CONFIG_TI_C54X) || defined (CONFIG_TI_C55X)
+#if defined(CONFIG_TI_C54X) || defined(CONFIG_TI_C55X)
 
 /* 2 on TI C5x DSP */
-#define BYTES_PER_CHAR 2 
+#define BYTES_PER_CHAR 2
 #define BITS_PER_CHAR 16
 #define LOG2_BITS_PER_CHAR 4
 

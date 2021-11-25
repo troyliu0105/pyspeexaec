@@ -33,36 +33,36 @@
 /*
    The echo canceller is based on the MDF algorithm described in:
 
-   J. S. Soo, K. K. Pang Multidelay block frequency adaptive filter, 
-   IEEE Trans. Acoust. Speech Signal Process., Vol. ASSP-38, No. 2, 
+   J. S. Soo, K. K. Pang Multidelay block frequency adaptive filter,
+   IEEE Trans. Acoust. Speech Signal Process., Vol. ASSP-38, No. 2,
    February 1990.
-   
-   We use the Alternatively Updated MDF (AUMDF) variant. Robustness to 
+
+   We use the Alternatively Updated MDF (AUMDF) variant. Robustness to
    double-talk is achieved using a variable learning rate as described in:
-   
-   Valin, J.-M., On Adjusting the Learning Rate in Frequency Domain Echo 
+
+   Valin, J.-M., On Adjusting the Learning Rate in Frequency Domain Echo
    Cancellation With Double-Talk. IEEE Transactions on Audio,
    Speech and Language Processing, Vol. 15, No. 3, pp. 1030-1034, 2007.
    http://people.xiph.org/~jm/papers/valin_taslp2006.pdf
-   
+
    There is no explicit double-talk detection, but a continuous variation
    in the learning rate based on residual echo, double-talk and background
    noise.
-   
+
    About the fixed-point version:
-   All the signals are represented with 16-bit words. The filter weights 
+   All the signals are represented with 16-bit words. The filter weights
    are represented with 32-bit words, but only the top 16 bits are used
    in most cases. The lower 16 bits are completely unreliable (due to the
    fact that the update is done only on the top bits), but help in the
    adaptation -- probably by removing a "threshold effect" due to
    quantization (rounding going to zero) when the gradient is small.
-   
+
    Another kludge that seems to work good: when performing the weight
    update, we only move half the way toward the "goal" this seems to
    reduce the effect of quantization noise in the update phase. This
    can be seen as applying a gradient descent on a "soft constraint"
    instead of having a hard constraint.
-   
+
 */
 
 #ifdef HAVE_CONFIG_H
@@ -70,11 +70,11 @@
 #endif
 
 #include "arch.h"
-#include "speex/speex_echo.h"
 #include "fftwrap.h"
-#include "pseudofloat.h"
 #include "math_approx.h"
 #include "os_support.h"
+#include "pseudofloat.h"
+#include "speex/speex_echo.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -89,9 +89,9 @@
 #endif
 
 #ifdef FIXED_POINT
-#define WORD2INT(x) ((x) < -32767 ? -32768 : ((x) > 32766 ? 32767 : (x)))  
+#define WORD2INT(x) ((x) < -32767 ? -32768 : ((x) > 32766 ? 32767 : (x)))
 #else
-#define WORD2INT(x) ((x) < -32767.5f ? -32768 : ((x) > 32766.5f ? 32767 : floor(.5+(x))))
+#define WORD2INT(x) ((x) < -32767.5f ? -32768 : ((x) > 32766.5f ? 32767 : floor(.5 + (x))))
 #endif
 
 /* If enabled, the AEC will use a foreground filter and a background filter to be more robust to double-talk
@@ -107,7 +107,7 @@ static const spx_float_t VAR2_SMOOTH = {23675, -15};
 static const spx_float_t VAR1_UPDATE = {16384, -15};
 static const spx_float_t VAR2_UPDATE = {16384, -16};
 static const spx_float_t VAR_BACKTRACK = {16384, -12};
-#define TOP16(x) ((x)>>16)
+#define TOP16(x) ((x) >> 16)
 
 #else
 
@@ -128,15 +128,15 @@ void speex_echo_get_residual(SpeexEchoState *st, spx_word32_t *Yout, int len);
 
 /** Speex echo cancellation state. */
 struct SpeexEchoState_ {
-  int frame_size;           /**< Number of samples processed each time */
+  int frame_size; /**< Number of samples processed each time */
   int window_size;
   int M;
   int cancel_count;
   int adapted;
   int saturated;
   int screwed_up;
-  int C;                    /** Number of input channels (microphones) */
-  int K;                    /** Number of output channels (loudspeakers) */
+  int C; /** Number of input channels (microphones) */
+  int K; /** Number of output channels (loudspeakers) */
   spx_int32_t sampling_rate;
   spx_word16_t spec_average;
   spx_word16_t beta0;
@@ -144,32 +144,32 @@ struct SpeexEchoState_ {
   spx_word32_t sum_adapt;
   spx_word16_t leak_estimate;
 
-  spx_word16_t *e;      /* scratch */
-  spx_word16_t *x;      /* Far-end input buffer (2N) */
-  spx_word16_t *X;      /* Far-end buffer (M+1 frames) in frequency domain */
-  spx_word16_t *input;  /* scratch */
-  spx_word16_t *y;      /* scratch */
+  spx_word16_t *e;     /* scratch */
+  spx_word16_t *x;     /* Far-end input buffer (2N) */
+  spx_word16_t *X;     /* Far-end buffer (M+1 frames) in frequency domain */
+  spx_word16_t *input; /* scratch */
+  spx_word16_t *y;     /* scratch */
   spx_word16_t *last_y;
-  spx_word16_t *Y;      /* scratch */
+  spx_word16_t *Y; /* scratch */
   spx_word16_t *E;
-  spx_word32_t *PHI;    /* scratch */
-  spx_word32_t *W;      /* (Background) filter weights */
+  spx_word32_t *PHI; /* scratch */
+  spx_word32_t *W;   /* (Background) filter weights */
 #ifdef TWO_PATH
   spx_word16_t *foreground; /* Foreground filter weights */
-  spx_word32_t Davg1;  /* 1st recursive average of the residual power difference */
-  spx_word32_t Davg2;  /* 2nd recursive average of the residual power difference */
-  spx_float_t Dvar1;  /* Estimated variance of 1st estimator */
-  spx_float_t Dvar2;  /* Estimated variance of 2nd estimator */
+  spx_word32_t Davg1;       /* 1st recursive average of the residual power difference */
+  spx_word32_t Davg2;       /* 2nd recursive average of the residual power difference */
+  spx_float_t Dvar1;        /* Estimated variance of 1st estimator */
+  spx_float_t Dvar2;        /* Estimated variance of 2nd estimator */
 #endif
   spx_word32_t *power;  /* Power of the far-end signal */
-  spx_float_t *power_1;/* Inverse power of far-end */
+  spx_float_t *power_1; /* Inverse power of far-end */
   spx_word16_t *wtmp;   /* scratch */
 #ifdef FIXED_POINT
-  spx_word16_t *wtmp2;  /* scratch */
+  spx_word16_t *wtmp2; /* scratch */
 #endif
-  spx_word32_t *Rf;     /* scratch */
-  spx_word32_t *Yf;     /* scratch */
-  spx_word32_t *Xf;     /* scratch */
+  spx_word32_t *Rf; /* scratch */
+  spx_word32_t *Yf; /* scratch */
+  spx_word32_t *Xf; /* scratch */
   spx_word32_t *Eh;
   spx_word32_t *Yh;
   spx_float_t Pey;
@@ -188,16 +188,12 @@ struct SpeexEchoState_ {
   int play_buf_started;
 };
 
-static inline void filter_dc_notch16(const spx_int16_t *in,
-                                     spx_word16_t radius,
-                                     spx_word16_t *out,
-                                     int len,
-                                     spx_mem_t *mem,
-                                     int stride) {
+static inline void filter_dc_notch16(const spx_int16_t *in, spx_word16_t radius, spx_word16_t *out, int len,
+                                     spx_mem_t *mem, int stride) {
   int i;
   spx_word16_t den2;
 #ifdef FIXED_POINT
-  den2 = MULT16_16_Q15(radius,radius) + MULT16_16_Q15(QCONST16(.7,15),MULT16_16_Q15(32767-radius,32767-radius));
+  den2 = MULT16_16_Q15(radius, radius) + MULT16_16_Q15(QCONST16(.7, 15), MULT16_16_Q15(32767 - radius, 32767 - radius));
 #else
   den2 = radius * radius + .7 * (1 - radius) * (1 - radius);
 #endif
@@ -206,7 +202,7 @@ static inline void filter_dc_notch16(const spx_int16_t *in,
     spx_word16_t vin = in[i * stride];
     spx_word32_t vout = mem[0] + SHL32(EXTEND32(vin), 15);
 #ifdef FIXED_POINT
-    mem[0] = mem[1] + SHL32(SHL32(-EXTEND32(vin),15) + MULT16_32_Q15(radius,vout),1);
+    mem[0] = mem[1] + SHL32(SHL32(-EXTEND32(vin), 15) + MULT16_32_Q15(radius, vout), 1);
 #else
     mem[0] = mem[1] + 2 * (-vin + radius * vout);
 #endif
@@ -251,59 +247,50 @@ static inline void power_spectrum_accum(const spx_word16_t *X, spx_word32_t *ps,
 
 /** Compute cross-power spectrum of a half-complex (packed) vectors and add to acc */
 #ifdef FIXED_POINT
-static inline void spectral_mul_accum(const spx_word16_t *X, const spx_word32_t *Y, spx_word16_t *acc, int N, int M)
-{
-   int i,j;
-   spx_word32_t tmp1=0,tmp2=0;
-   for (j=0;j<M;j++)
-   {
-      tmp1 = MAC16_16(tmp1, X[j*N],TOP16(Y[j*N]));
-   }
-   acc[0] = PSHR32(tmp1,WEIGHT_SHIFT);
-   for (i=1;i<N-1;i+=2)
-   {
-      tmp1 = tmp2 = 0;
-      for (j=0;j<M;j++)
-      {
-         tmp1 = SUB32(MAC16_16(tmp1, X[j*N+i],TOP16(Y[j*N+i])), MULT16_16(X[j*N+i+1],TOP16(Y[j*N+i+1])));
-         tmp2 = MAC16_16(MAC16_16(tmp2, X[j*N+i+1],TOP16(Y[j*N+i])), X[j*N+i], TOP16(Y[j*N+i+1]));
-      }
-      acc[i] = PSHR32(tmp1,WEIGHT_SHIFT);
-      acc[i+1] = PSHR32(tmp2,WEIGHT_SHIFT);
-   }
-   tmp1 = tmp2 = 0;
-   for (j=0;j<M;j++)
-   {
-      tmp1 = MAC16_16(tmp1, X[(j+1)*N-1],TOP16(Y[(j+1)*N-1]));
-   }
-   acc[N-1] = PSHR32(tmp1,WEIGHT_SHIFT);
+static inline void spectral_mul_accum(const spx_word16_t *X, const spx_word32_t *Y, spx_word16_t *acc, int N, int M) {
+  int i, j;
+  spx_word32_t tmp1 = 0, tmp2 = 0;
+  for (j = 0; j < M; j++) {
+    tmp1 = MAC16_16(tmp1, X[j * N], TOP16(Y[j * N]));
+  }
+  acc[0] = PSHR32(tmp1, WEIGHT_SHIFT);
+  for (i = 1; i < N - 1; i += 2) {
+    tmp1 = tmp2 = 0;
+    for (j = 0; j < M; j++) {
+      tmp1 = SUB32(MAC16_16(tmp1, X[j * N + i], TOP16(Y[j * N + i])),
+                   MULT16_16(X[j * N + i + 1], TOP16(Y[j * N + i + 1])));
+      tmp2 = MAC16_16(MAC16_16(tmp2, X[j * N + i + 1], TOP16(Y[j * N + i])), X[j * N + i], TOP16(Y[j * N + i + 1]));
+    }
+    acc[i] = PSHR32(tmp1, WEIGHT_SHIFT);
+    acc[i + 1] = PSHR32(tmp2, WEIGHT_SHIFT);
+  }
+  tmp1 = tmp2 = 0;
+  for (j = 0; j < M; j++) {
+    tmp1 = MAC16_16(tmp1, X[(j + 1) * N - 1], TOP16(Y[(j + 1) * N - 1]));
+  }
+  acc[N - 1] = PSHR32(tmp1, WEIGHT_SHIFT);
 }
-static inline void spectral_mul_accum16(const spx_word16_t *X, const spx_word16_t *Y, spx_word16_t *acc, int N, int M)
-{
-   int i,j;
-   spx_word32_t tmp1=0,tmp2=0;
-   for (j=0;j<M;j++)
-   {
-      tmp1 = MAC16_16(tmp1, X[j*N],Y[j*N]);
-   }
-   acc[0] = PSHR32(tmp1,WEIGHT_SHIFT);
-   for (i=1;i<N-1;i+=2)
-   {
-      tmp1 = tmp2 = 0;
-      for (j=0;j<M;j++)
-      {
-         tmp1 = SUB32(MAC16_16(tmp1, X[j*N+i],Y[j*N+i]), MULT16_16(X[j*N+i+1],Y[j*N+i+1]));
-         tmp2 = MAC16_16(MAC16_16(tmp2, X[j*N+i+1],Y[j*N+i]), X[j*N+i], Y[j*N+i+1]);
-      }
-      acc[i] = PSHR32(tmp1,WEIGHT_SHIFT);
-      acc[i+1] = PSHR32(tmp2,WEIGHT_SHIFT);
-   }
-   tmp1 = tmp2 = 0;
-   for (j=0;j<M;j++)
-   {
-      tmp1 = MAC16_16(tmp1, X[(j+1)*N-1],Y[(j+1)*N-1]);
-   }
-   acc[N-1] = PSHR32(tmp1,WEIGHT_SHIFT);
+static inline void spectral_mul_accum16(const spx_word16_t *X, const spx_word16_t *Y, spx_word16_t *acc, int N, int M) {
+  int i, j;
+  spx_word32_t tmp1 = 0, tmp2 = 0;
+  for (j = 0; j < M; j++) {
+    tmp1 = MAC16_16(tmp1, X[j * N], Y[j * N]);
+  }
+  acc[0] = PSHR32(tmp1, WEIGHT_SHIFT);
+  for (i = 1; i < N - 1; i += 2) {
+    tmp1 = tmp2 = 0;
+    for (j = 0; j < M; j++) {
+      tmp1 = SUB32(MAC16_16(tmp1, X[j * N + i], Y[j * N + i]), MULT16_16(X[j * N + i + 1], Y[j * N + i + 1]));
+      tmp2 = MAC16_16(MAC16_16(tmp2, X[j * N + i + 1], Y[j * N + i]), X[j * N + i], Y[j * N + i + 1]);
+    }
+    acc[i] = PSHR32(tmp1, WEIGHT_SHIFT);
+    acc[i + 1] = PSHR32(tmp2, WEIGHT_SHIFT);
+  }
+  tmp1 = tmp2 = 0;
+  for (j = 0; j < M; j++) {
+    tmp1 = MAC16_16(tmp1, X[(j + 1) * N - 1], Y[(j + 1) * N - 1]);
+  }
+  acc[N - 1] = PSHR32(tmp1, WEIGHT_SHIFT);
 }
 
 #else
@@ -326,12 +313,8 @@ static inline void spectral_mul_accum(const spx_word16_t *X, const spx_word32_t 
 #endif
 
 /** Compute weighted cross-power spectrum of a half-complex (packed) vector with conjugate */
-static inline void weighted_spectral_mul_conj(const spx_float_t *w,
-                                              const spx_float_t p,
-                                              const spx_word16_t *X,
-                                              const spx_word16_t *Y,
-                                              spx_word32_t *prod,
-                                              int N) {
+static inline void weighted_spectral_mul_conj(const spx_float_t *w, const spx_float_t p, const spx_word16_t *X,
+                                              const spx_word16_t *Y, spx_word32_t *prod, int N) {
   int i, j;
   spx_float_t W;
   W = FLOAT_AMULT(p, w[0]);
@@ -376,17 +359,15 @@ static inline void mdf_adjust_prop(const spx_word32_t *W, int N, int M, int P, s
 
 #ifdef DUMP_ECHO_CANCEL_DATA
 #include <stdio.h>
-static FILE *rFile=NULL, *pFile=NULL, *oFile=NULL;
+static FILE *rFile = NULL, *pFile = NULL, *oFile = NULL;
 
-static void dump_audio(const spx_int16_t *rec, const spx_int16_t *play, const spx_int16_t *out, int len)
-{
-   if (!(rFile && pFile && oFile))
-   {
-      speex_fatal("Dump files not open");
-   }
-   fwrite(rec, sizeof(spx_int16_t), len, rFile);
-   fwrite(play, sizeof(spx_int16_t), len, pFile);
-   fwrite(out, sizeof(spx_int16_t), len, oFile);
+static void dump_audio(const spx_int16_t *rec, const spx_int16_t *play, const spx_int16_t *out, int len) {
+  if (!(rFile && pFile && oFile)) {
+    speex_fatal("Dump files not open");
+  }
+  fwrite(rec, sizeof(spx_int16_t), len, rFile);
+  fwrite(play, sizeof(spx_int16_t), len, pFile);
+  fwrite(out, sizeof(spx_int16_t), len, oFile);
 }
 #endif
 
@@ -397,7 +378,7 @@ EXPORT SpeexEchoState *speex_echo_state_init(int frame_size, int filter_length) 
 
 EXPORT SpeexEchoState *speex_echo_state_init_mc(int frame_size, int filter_length, int nb_mic, int nb_speakers) {
   int i, N, M, C, K;
-  SpeexEchoState *st = (SpeexEchoState *) speex_alloc(sizeof(SpeexEchoState));
+  SpeexEchoState *st = (SpeexEchoState *)speex_alloc(sizeof(SpeexEchoState));
 
   st->K = nb_speakers;
   st->C = nb_mic;
@@ -405,7 +386,7 @@ EXPORT SpeexEchoState *speex_echo_state_init_mc(int frame_size, int filter_lengt
   K = st->K;
 #ifdef DUMP_ECHO_CANCEL_DATA
   if (rFile || pFile || oFile)
-     speex_fatal("Opening dump files twice");
+    speex_fatal("Opening dump files twice");
   rFile = fopen("aec_rec.sw", "wb");
   pFile = fopen("aec_play.sw", "wb");
   oFile = fopen("aec_out.sw", "wb");
@@ -433,36 +414,35 @@ EXPORT SpeexEchoState *speex_echo_state_init_mc(int frame_size, int filter_lengt
 
   st->fft_table = spx_fft_init(N);
 
-  st->e = (spx_word16_t *) speex_alloc(C * N * sizeof(spx_word16_t));
-  st->x = (spx_word16_t *) speex_alloc(K * N * sizeof(spx_word16_t));
-  st->input = (spx_word16_t *) speex_alloc(C * st->frame_size * sizeof(spx_word16_t));
-  st->y = (spx_word16_t *) speex_alloc(C * N * sizeof(spx_word16_t));
-  st->last_y = (spx_word16_t *) speex_alloc(C * N * sizeof(spx_word16_t));
-  st->Yf = (spx_word32_t *) speex_alloc((st->frame_size + 1) * sizeof(spx_word32_t));
-  st->Rf = (spx_word32_t *) speex_alloc((st->frame_size + 1) * sizeof(spx_word32_t));
-  st->Xf = (spx_word32_t *) speex_alloc((st->frame_size + 1) * sizeof(spx_word32_t));
-  st->Yh = (spx_word32_t *) speex_alloc((st->frame_size + 1) * sizeof(spx_word32_t));
-  st->Eh = (spx_word32_t *) speex_alloc((st->frame_size + 1) * sizeof(spx_word32_t));
+  st->e = (spx_word16_t *)speex_alloc(C * N * sizeof(spx_word16_t));
+  st->x = (spx_word16_t *)speex_alloc(K * N * sizeof(spx_word16_t));
+  st->input = (spx_word16_t *)speex_alloc(C * st->frame_size * sizeof(spx_word16_t));
+  st->y = (spx_word16_t *)speex_alloc(C * N * sizeof(spx_word16_t));
+  st->last_y = (spx_word16_t *)speex_alloc(C * N * sizeof(spx_word16_t));
+  st->Yf = (spx_word32_t *)speex_alloc((st->frame_size + 1) * sizeof(spx_word32_t));
+  st->Rf = (spx_word32_t *)speex_alloc((st->frame_size + 1) * sizeof(spx_word32_t));
+  st->Xf = (spx_word32_t *)speex_alloc((st->frame_size + 1) * sizeof(spx_word32_t));
+  st->Yh = (spx_word32_t *)speex_alloc((st->frame_size + 1) * sizeof(spx_word32_t));
+  st->Eh = (spx_word32_t *)speex_alloc((st->frame_size + 1) * sizeof(spx_word32_t));
 
-  st->X = (spx_word16_t *) speex_alloc(K * (M + 1) * N * sizeof(spx_word16_t));
-  st->Y = (spx_word16_t *) speex_alloc(C * N * sizeof(spx_word16_t));
-  st->E = (spx_word16_t *) speex_alloc(C * N * sizeof(spx_word16_t));
-  st->W = (spx_word32_t *) speex_alloc(C * K * M * N * sizeof(spx_word32_t));
+  st->X = (spx_word16_t *)speex_alloc(K * (M + 1) * N * sizeof(spx_word16_t));
+  st->Y = (spx_word16_t *)speex_alloc(C * N * sizeof(spx_word16_t));
+  st->E = (spx_word16_t *)speex_alloc(C * N * sizeof(spx_word16_t));
+  st->W = (spx_word32_t *)speex_alloc(C * K * M * N * sizeof(spx_word32_t));
 #ifdef TWO_PATH
-  st->foreground = (spx_word16_t *) speex_alloc(M * N * C * K * sizeof(spx_word16_t));
+  st->foreground = (spx_word16_t *)speex_alloc(M * N * C * K * sizeof(spx_word16_t));
 #endif
-  st->PHI = (spx_word32_t *) speex_alloc(N * sizeof(spx_word32_t));
-  st->power = (spx_word32_t *) speex_alloc((frame_size + 1) * sizeof(spx_word32_t));
-  st->power_1 = (spx_float_t *) speex_alloc((frame_size + 1) * sizeof(spx_float_t));
-  st->window = (spx_word16_t *) speex_alloc(N * sizeof(spx_word16_t));
-  st->prop = (spx_word16_t *) speex_alloc(M * sizeof(spx_word16_t));
-  st->wtmp = (spx_word16_t *) speex_alloc(N * sizeof(spx_word16_t));
+  st->PHI = (spx_word32_t *)speex_alloc(N * sizeof(spx_word32_t));
+  st->power = (spx_word32_t *)speex_alloc((frame_size + 1) * sizeof(spx_word32_t));
+  st->power_1 = (spx_float_t *)speex_alloc((frame_size + 1) * sizeof(spx_float_t));
+  st->window = (spx_word16_t *)speex_alloc(N * sizeof(spx_word16_t));
+  st->prop = (spx_word16_t *)speex_alloc(M * sizeof(spx_word16_t));
+  st->wtmp = (spx_word16_t *)speex_alloc(N * sizeof(spx_word16_t));
 #ifdef FIXED_POINT
-  st->wtmp2 = (spx_word16_t*)speex_alloc(N*sizeof(spx_word16_t));
-  for (i=0;i<N>>1;i++)
-  {
-     st->window[i] = (16383-SHL16(spx_cos(DIV32_16(MULT16_16(25736,i<<1),N)),1));
-     st->window[N-i-1] = st->window[i];
+  st->wtmp2 = (spx_word16_t *)speex_alloc(N * sizeof(spx_word16_t));
+  for (i = 0; i < N >> 1; i++) {
+    st->window[i] = (16383 - SHL16(spx_cos(DIV32_16(MULT16_16(25736, i << 1), N)), 1));
+    st->window[N - i - 1] = st->window[i];
   }
 #else
   for (i = 0; i < N; i++)
@@ -487,9 +467,9 @@ EXPORT SpeexEchoState *speex_echo_state_init_mc(int frame_size, int filter_lengt
     }
   }
 
-  st->memX = (spx_word16_t *) speex_alloc(K * sizeof(spx_word16_t));
-  st->memD = (spx_word16_t *) speex_alloc(C * sizeof(spx_word16_t));
-  st->memE = (spx_word16_t *) speex_alloc(C * sizeof(spx_word16_t));
+  st->memX = (spx_word16_t *)speex_alloc(K * sizeof(spx_word16_t));
+  st->memD = (spx_word16_t *)speex_alloc(C * sizeof(spx_word16_t));
+  st->memE = (spx_word16_t *)speex_alloc(C * sizeof(spx_word16_t));
   st->preemph = QCONST16(.9, 15);
   if (st->sampling_rate < 12000)
     st->notch_radius = QCONST16(.9, 15);
@@ -498,7 +478,7 @@ EXPORT SpeexEchoState *speex_echo_state_init_mc(int frame_size, int filter_lengt
   else
     st->notch_radius = QCONST16(.992, 15);
 
-  st->notch_mem = (spx_mem_t *) speex_alloc(2 * C * sizeof(spx_mem_t));
+  st->notch_mem = (spx_mem_t *)speex_alloc(2 * C * sizeof(spx_mem_t));
   st->adapted = 0;
   st->Pey = st->Pyy = FLOAT_ONE;
 
@@ -507,7 +487,7 @@ EXPORT SpeexEchoState *speex_echo_state_init_mc(int frame_size, int filter_lengt
   st->Dvar1 = st->Dvar2 = FLOAT_ZERO;
 #endif
 
-  st->play_buf = (spx_int16_t *) speex_alloc(K * (PLAYBACK_DELAY + 1) * st->frame_size * sizeof(spx_int16_t));
+  st->play_buf = (spx_int16_t *)speex_alloc(K * (PLAYBACK_DELAY + 1) * st->frame_size * sizeof(spx_int16_t));
   st->play_buf_pos = PLAYBACK_DELAY * st->frame_size;
   st->play_buf_started = 0;
 
@@ -565,7 +545,6 @@ EXPORT void speex_echo_state_reset(SpeexEchoState *st) {
     st->play_buf[i] = 0;
   st->play_buf_pos = PLAYBACK_DELAY * st->frame_size;
   st->play_buf_started = 0;
-
 }
 
 /** Destroys an echo canceller state */
@@ -658,18 +637,13 @@ EXPORT void speex_echo_playback(SpeexEchoState *st, const spx_int16_t *play) {
 }
 
 /** Performs echo cancellation on a frame (deprecated, last arg now ignored) */
-EXPORT void speex_echo_cancel(SpeexEchoState *st,
-                              const spx_int16_t *in,
-                              const spx_int16_t *far_end,
-                              spx_int16_t *out,
+EXPORT void speex_echo_cancel(SpeexEchoState *st, const spx_int16_t *in, const spx_int16_t *far_end, spx_int16_t *out,
                               spx_int32_t *Yout) {
   speex_echo_cancellation(st, in, far_end, out);
 }
 
 /** Performs echo cancellation on a frame */
-EXPORT void speex_echo_cancellation(SpeexEchoState *st,
-                                    const spx_int16_t *in,
-                                    const spx_int16_t *far_end,
+EXPORT void speex_echo_cancellation(SpeexEchoState *st, const spx_int16_t *in, const spx_int16_t *far_end,
                                     spx_int16_t *out) {
   int i, j, chan, speak;
   int N, M, C, K;
@@ -692,8 +666,8 @@ EXPORT void speex_echo_cancellation(SpeexEchoState *st,
 
   st->cancel_count++;
 #ifdef FIXED_POINT
-  ss=DIV32_16(11469,M);
-  ss_1 = SUB16(32767,ss);
+  ss = DIV32_16(11469, M);
+  ss_1 = SUB16(32767, ss);
 #else
   ss = .35 / M;
   ss_1 = 1 - ss;
@@ -701,12 +675,8 @@ EXPORT void speex_echo_cancellation(SpeexEchoState *st,
 
   for (chan = 0; chan < C; chan++) {
     /* Apply a notch filter to make sure DC doesn't end up causing problems */
-    filter_dc_notch16(in + chan,
-                      st->notch_radius,
-                      st->input + chan * st->frame_size,
-                      st->frame_size,
-                      st->notch_mem + 2 * chan,
-                      C);
+    filter_dc_notch16(in + chan, st->notch_radius, st->input + chan * st->frame_size, st->frame_size,
+                      st->notch_mem + 2 * chan, C);
     /* Copy input data to buffer and apply pre-emphasis */
     /* Copy input data to buffer */
     for (i = 0; i < st->frame_size; i++) {
@@ -715,17 +685,15 @@ EXPORT void speex_echo_cancellation(SpeexEchoState *st,
       tmp32 =
           SUB32(EXTEND32(st->input[chan * st->frame_size + i]), EXTEND32(MULT16_16_P15(st->preemph, st->memD[chan])));
 #ifdef FIXED_POINT
-      if (tmp32 > 32767)
-      {
-         tmp32 = 32767;
-         if (st->saturated == 0)
-            st->saturated = 1;
+      if (tmp32 > 32767) {
+        tmp32 = 32767;
+        if (st->saturated == 0)
+          st->saturated = 1;
       }
-      if (tmp32 < -32767)
-      {
-         tmp32 = -32767;
-         if (st->saturated == 0)
-            st->saturated = 1;
+      if (tmp32 < -32767) {
+        tmp32 = -32767;
+        if (st->saturated == 0)
+          st->saturated = 1;
       }
 #endif
       st->memD[chan] = st->input[chan * st->frame_size + i];
@@ -740,15 +708,13 @@ EXPORT void speex_echo_cancellation(SpeexEchoState *st,
       tmp32 = SUB32(EXTEND32(far_end[i * K + speak]), EXTEND32(MULT16_16_P15(st->preemph, st->memX[speak])));
 #ifdef FIXED_POINT
       /*FIXME: If saturation occurs here, we need to freeze adaptation for M frames (not just one) */
-      if (tmp32 > 32767)
-      {
-         tmp32 = 32767;
-         st->saturated = M+1;
+      if (tmp32 > 32767) {
+        tmp32 = 32767;
+        st->saturated = M + 1;
       }
-      if (tmp32 < -32767)
-      {
-         tmp32 = -32767;
-         st->saturated = M+1;
+      if (tmp32 < -32767) {
+        tmp32 = -32767;
+        st->saturated = M + 1;
       }
 #endif
       st->x[speak * N + i + st->frame_size] = EXTRACT16(tmp32);
@@ -793,12 +759,8 @@ EXPORT void speex_echo_cancellation(SpeexEchoState *st,
     for (chan = 0; chan < C; chan++) {
       for (speak = 0; speak < K; speak++) {
         for (j = M - 1; j >= 0; j--) {
-          weighted_spectral_mul_conj(st->power_1,
-                                     FLOAT_SHL(PSEUDOFLOAT(st->prop[j]), -15),
-                                     &st->X[(j + 1) * N * K + speak * N],
-                                     st->E + chan * N,
-                                     st->PHI,
-                                     N);
+          weighted_spectral_mul_conj(st->power_1, FLOAT_SHL(PSEUDOFLOAT(st->prop[j]), -15),
+                                     &st->X[(j + 1) * N * K + speak * N], st->E + chan * N, st->PHI, N);
           for (i = 0; i < N; i++)
             st->W[chan * N * K * M + j * N * K + speak * N + i] += st->PHI[i];
         }
@@ -817,21 +779,21 @@ EXPORT void speex_echo_cancellation(SpeexEchoState *st,
         /* Remove the "if" to make this an MDF filter */
         if (j == 0 || st->cancel_count % (M - 1) == j - 1) {
 #ifdef FIXED_POINT
-          for (i=0;i<N;i++)
-             st->wtmp2[i] = EXTRACT16(PSHR32(st->W[chan*N*K*M + j*N*K + speak*N + i],NORMALIZE_SCALEDOWN+16));
+          for (i = 0; i < N; i++)
+            st->wtmp2[i] =
+                EXTRACT16(PSHR32(st->W[chan * N * K * M + j * N * K + speak * N + i], NORMALIZE_SCALEDOWN + 16));
           spx_ifft(st->fft_table, st->wtmp2, st->wtmp);
-          for (i=0;i<st->frame_size;i++)
-          {
-             st->wtmp[i]=0;
+          for (i = 0; i < st->frame_size; i++) {
+            st->wtmp[i] = 0;
           }
-          for (i=st->frame_size;i<N;i++)
-          {
-             st->wtmp[i]=SHL16(st->wtmp[i],NORMALIZE_SCALEUP);
+          for (i = st->frame_size; i < N; i++) {
+            st->wtmp[i] = SHL16(st->wtmp[i], NORMALIZE_SCALEUP);
           }
           spx_fft(st->fft_table, st->wtmp, st->wtmp2);
           /* The "-1" in the shift is a sort of kludge that trades less efficient update speed for decrease noise */
-          for (i=0;i<N;i++)
-             st->W[chan*N*K*M + j*N*K + speak*N + i] -= SHL32(EXTEND32(st->wtmp2[i]),16+NORMALIZE_SCALEDOWN-NORMALIZE_SCALEUP-1);
+          for (i = 0; i < N; i++)
+            st->W[chan * N * K * M + j * N * K + speak * N + i] -=
+                SHL32(EXTEND32(st->wtmp2[i]), 16 + NORMALIZE_SCALEDOWN - NORMALIZE_SCALEUP - 1);
 #else
           spx_ifft(st->fft_table, &st->W[chan * N * K * M + j * N * K + speak * N], st->wtmp);
           for (i = st->frame_size; i < N; i++) {
@@ -907,8 +869,8 @@ EXPORT void speex_echo_cancellation(SpeexEchoState *st,
     for (chan = 0; chan < C; chan++)
       for (i = 0; i < st->frame_size; i++)
         st->e[chan * N + i + st->frame_size] =
-            MULT16_16_Q15(st->window[i + st->frame_size], st->e[chan * N + i + st->frame_size])
-                + MULT16_16_Q15(st->window[i], st->y[chan * N + i + st->frame_size]);
+            MULT16_16_Q15(st->window[i + st->frame_size], st->e[chan * N + i + st->frame_size]) +
+            MULT16_16_Q15(st->window[i], st->y[chan * N + i + st->frame_size]);
   } else {
     int reset_background = 0;
     /* Otherwise, check if the background filter is significantly worse */
@@ -945,7 +907,7 @@ EXPORT void speex_echo_cancellation(SpeexEchoState *st,
 #ifdef TWO_PATH
       tmp_out = SUB32(EXTEND32(st->input[chan * st->frame_size + i]), EXTEND32(st->e[chan * N + i + st->frame_size]));
 #else
-      tmp_out = SUB32(EXTEND32(st->input[chan*st->frame_size+i]), EXTEND32(st->y[chan*N+i+st->frame_size]));
+      tmp_out = SUB32(EXTEND32(st->input[chan * st->frame_size + i]), EXTEND32(st->y[chan * N + i + st->frame_size]));
 #endif
       tmp_out = ADD32(tmp_out, EXTEND32(MULT16_16_P15(st->preemph, st->memE[chan])));
       /* This is an arbitrary test for saturation in the microphone signal */
@@ -982,7 +944,6 @@ EXPORT void speex_echo_cancellation(SpeexEchoState *st,
     /* Compute power spectrum of echo (X), error (E) and filter response (Y) */
     power_spectrum_accum(st->E + chan * N, st->Rf, N);
     power_spectrum_accum(st->Y + chan * N, st->Yf, N);
-
   }
 
   /*printf ("%f %f %f %f\n", Sff, See, Syy, Sdd, st->update_cond);*/
@@ -992,7 +953,7 @@ EXPORT void speex_echo_cancellation(SpeexEchoState *st,
 #ifndef FIXED_POINT
       || !(Sff < N * 1e9 && Syy < N * 1e9 && Sxx < N * 1e9)
 #endif
-      ) {
+  ) {
     /* Things have gone really bad */
     st->screwed_up += 50;
     for (i = 0; i < st->frame_size * C; i++)
@@ -1018,7 +979,6 @@ EXPORT void speex_echo_cancellation(SpeexEchoState *st,
     power_spectrum_accum(st->X + speak * N, st->Xf, N);
   }
 
-
   /* Smooth far end energy estimate over time */
   for (j = 0; j <= st->frame_size; j++)
     st->power[j] = MULT16_32_Q15(ss_1, st->power[j]) + 1 + MULT16_32_Q15(ss, st->Xf[j]);
@@ -1031,8 +991,8 @@ EXPORT void speex_echo_cancellation(SpeexEchoState *st,
     Pey = FLOAT_ADD(Pey, FLOAT_MULT(Eh, Yh));
     Pyy = FLOAT_ADD(Pyy, FLOAT_MULT(Yh, Yh));
 #ifdef FIXED_POINT
-    st->Eh[j] = MAC16_32_Q15(MULT16_32_Q15(SUB16(32767,st->spec_average),st->Eh[j]), st->spec_average, st->Rf[j]);
-    st->Yh[j] = MAC16_32_Q15(MULT16_32_Q15(SUB16(32767,st->spec_average),st->Yh[j]), st->spec_average, st->Yf[j]);
+    st->Eh[j] = MAC16_32_Q15(MULT16_32_Q15(SUB16(32767, st->spec_average), st->Eh[j]), st->spec_average, st->Rf[j]);
+    st->Yh[j] = MAC16_32_Q15(MULT16_32_Q15(SUB16(32767, st->spec_average), st->Yh[j]), st->spec_average, st->Yf[j]);
 #else
     st->Eh[j] = (1 - st->spec_average) * st->Eh[j] + st->spec_average * st->Rf[j];
     st->Yh[j] = (1 - st->spec_average) * st->Yh[j] + st->spec_average * st->Yf[j];
@@ -1065,24 +1025,24 @@ EXPORT void speex_echo_cancellation(SpeexEchoState *st,
     st->leak_estimate = 32767;
   else
     st->leak_estimate = SHL16(st->leak_estimate, 1);
-  /*printf ("%f\n", st->leak_estimate);*/
+    /*printf ("%f\n", st->leak_estimate);*/
 
-  /* Compute Residual to Error Ratio */
+    /* Compute Residual to Error Ratio */
 #ifdef FIXED_POINT
-  tmp32 = MULT16_32_Q15(st->leak_estimate,Syy);
-  tmp32 = ADD32(SHR32(Sxx,13), ADD32(tmp32, SHL32(tmp32,1)));
+  tmp32 = MULT16_32_Q15(st->leak_estimate, Syy);
+  tmp32 = ADD32(SHR32(Sxx, 13), ADD32(tmp32, SHL32(tmp32, 1)));
   /* Check for y in e (lower bound on RER) */
   {
-     spx_float_t bound = PSEUDOFLOAT(Sey);
-     bound = FLOAT_DIVU(FLOAT_MULT(bound, bound), PSEUDOFLOAT(ADD32(1,Syy)));
-     if (FLOAT_GT(bound, PSEUDOFLOAT(See)))
-        tmp32 = See;
-     else if (tmp32 < FLOAT_EXTRACT32(bound))
-        tmp32 = FLOAT_EXTRACT32(bound);
+    spx_float_t bound = PSEUDOFLOAT(Sey);
+    bound = FLOAT_DIVU(FLOAT_MULT(bound, bound), PSEUDOFLOAT(ADD32(1, Syy)));
+    if (FLOAT_GT(bound, PSEUDOFLOAT(See)))
+      tmp32 = See;
+    else if (tmp32 < FLOAT_EXTRACT32(bound))
+      tmp32 = FLOAT_EXTRACT32(bound);
   }
-  if (tmp32 > SHR32(See,1))
-     tmp32 = SHR32(See,1);
-  RER = FLOAT_EXTRACT16(FLOAT_SHL(FLOAT_DIV32(tmp32,See),15));
+  if (tmp32 > SHR32(See, 1))
+    tmp32 = SHR32(See, 1);
+  RER = FLOAT_EXTRACT16(FLOAT_SHL(FLOAT_DIV32(tmp32, See), 15));
 #else
   RER = (.0001 * Sxx + 3. * MULT16_32_Q15(st->leak_estimate, Syy)) / See;
   /* Check for y in e (lower bound on RER) */
@@ -1093,8 +1053,8 @@ EXPORT void speex_echo_cancellation(SpeexEchoState *st,
 #endif
 
   /* We consider that the filter has had minimal adaptation if the following is true*/
-  if (!st->adapted && st->sum_adapt > SHL32(EXTEND32(M), 15)
-      && MULT16_32_Q15(st->leak_estimate, Syy) > MULT16_32_Q15(QCONST16(.03f, 15), Syy)) {
+  if (!st->adapted && st->sum_adapt > SHL32(EXTEND32(M), 15) &&
+      MULT16_32_Q15(st->leak_estimate, Syy) > MULT16_32_Q15(QCONST16(.03f, 15), Syy)) {
     st->adapted = 1;
   }
 
@@ -1106,13 +1066,13 @@ EXPORT void speex_echo_cancellation(SpeexEchoState *st,
       r = MULT16_32_Q15(st->leak_estimate, SHL32(st->Yf[i], 3));
       e = SHL32(st->Rf[i], 3) + 1;
 #ifdef FIXED_POINT
-      if (r>SHR32(e,1))
-         r = SHR32(e,1);
+      if (r > SHR32(e, 1))
+        r = SHR32(e, 1);
 #else
       if (r > .5 * e)
         r = .5 * e;
 #endif
-      r = MULT16_32_Q15(QCONST16(.7, 15), r) + MULT16_32_Q15(QCONST16(.3, 15), (spx_word32_t) (MULT16_32_Q15(RER, e)));
+      r = MULT16_32_Q15(QCONST16(.7, 15), r) + MULT16_32_Q15(QCONST16(.3, 15), (spx_word32_t)(MULT16_32_Q15(RER, e)));
       /*st->power_1[i] = adapt_rate*r/(e*(1+st->power[i]));*/
       st->power_1[i] = FLOAT_SHL(FLOAT_DIV32_FLOAT(r, FLOAT_MUL32U(e, st->power[i] + 10)), WEIGHT_SHIFT + 16);
     }
@@ -1123,8 +1083,8 @@ EXPORT void speex_echo_cancellation(SpeexEchoState *st,
     if (Sxx > SHR32(MULT16_16(N, 1000), 6)) {
       tmp32 = MULT16_32_Q15(QCONST16(.25f, 15), Sxx);
 #ifdef FIXED_POINT
-      if (tmp32 > SHR32(See,2))
-         tmp32 = SHR32(See,2);
+      if (tmp32 > SHR32(See, 2))
+        tmp32 = SHR32(See, 2);
 #else
       if (tmp32 > .25 * See)
         tmp32 = .25 * See;
@@ -1133,7 +1093,6 @@ EXPORT void speex_echo_cancellation(SpeexEchoState *st,
     }
     for (i = 0; i <= st->frame_size; i++)
       st->power_1[i] = FLOAT_SHL(FLOAT_DIV32(EXTEND32(adapt_rate), ADD32(st->power[i], 10)), WEIGHT_SHIFT + 1);
-
 
     /* How much have we adapted so far? */
     st->sum_adapt = ADD32(st->sum_adapt, adapt_rate);
@@ -1151,7 +1110,6 @@ EXPORT void speex_echo_cancellation(SpeexEchoState *st,
     /* moved earlier: for (i=0;i<N;i++)
     st->last_y[i] = st->x[i];*/
   }
-
 }
 
 /* Compute spectrum of estimated echo for use in an echo post-filter */
@@ -1172,9 +1130,9 @@ void speex_echo_get_residual(SpeexEchoState *st, spx_word32_t *residual_echo, in
 
 #ifdef FIXED_POINT
   if (st->leak_estimate > 16383)
-     leak2 = 32767;
+    leak2 = 32767;
   else
-     leak2 = SHL16(st->leak_estimate, 1);
+    leak2 = SHL16(st->leak_estimate, 1);
 #else
   if (st->leak_estimate > .5)
     leak2 = 1;
@@ -1183,18 +1141,17 @@ void speex_echo_get_residual(SpeexEchoState *st, spx_word32_t *residual_echo, in
 #endif
   /* Estimate residual echo */
   for (i = 0; i <= st->frame_size; i++)
-    residual_echo[i] = (spx_int32_t) MULT16_32_Q15(leak2, residual_echo[i]);
-
+    residual_echo[i] = (spx_int32_t)MULT16_32_Q15(leak2, residual_echo[i]);
 }
 
 EXPORT int speex_echo_ctl(SpeexEchoState *st, int request, void *ptr) {
   switch (request) {
 
   case SPEEX_ECHO_GET_FRAME_SIZE:
-    (*(int *) ptr) = st->frame_size;
+    (*(int *)ptr) = st->frame_size;
     break;
   case SPEEX_ECHO_SET_SAMPLING_RATE:
-    st->sampling_rate = (*(int *) ptr);
+    st->sampling_rate = (*(int *)ptr);
     st->spec_average = DIV32_16(SHL32(EXTEND32(st->frame_size), 15), st->sampling_rate);
 #ifdef FIXED_POINT
     st->beta0 = DIV32_16(SHL32(EXTEND32(st->frame_size), 16), st->sampling_rate);
@@ -1211,20 +1168,20 @@ EXPORT int speex_echo_ctl(SpeexEchoState *st, int request, void *ptr) {
       st->notch_radius = QCONST16(.992, 15);
     break;
   case SPEEX_ECHO_GET_SAMPLING_RATE:
-    (*(int *) ptr) = st->sampling_rate;
+    (*(int *)ptr) = st->sampling_rate;
     break;
   case SPEEX_ECHO_GET_IMPULSE_RESPONSE_SIZE:
     /*FIXME: Implement this for multiple channels */
-    *((spx_int32_t *) ptr) = st->M * st->frame_size;
+    *((spx_int32_t *)ptr) = st->M * st->frame_size;
     break;
   case SPEEX_ECHO_GET_IMPULSE_RESPONSE: {
     int M = st->M, N = st->window_size, n = st->frame_size, i, j;
-    spx_int32_t *filt = (spx_int32_t *) ptr;
+    spx_int32_t *filt = (spx_int32_t *)ptr;
     for (j = 0; j < M; j++) {
       /*FIXME: Implement this for multiple channels */
 #ifdef FIXED_POINT
-      for (i=0;i<N;i++)
-         st->wtmp2[i] = EXTRACT16(PSHR32(st->W[j*N+i],16+NORMALIZE_SCALEDOWN));
+      for (i = 0; i < N; i++)
+        st->wtmp2[i] = EXTRACT16(PSHR32(st->W[j * N + i], 16 + NORMALIZE_SCALEDOWN));
       spx_ifft(st->fft_table, st->wtmp2, st->wtmp);
 #else
       spx_ifft(st->fft_table, &st->W[j * N], st->wtmp);
@@ -1232,8 +1189,7 @@ EXPORT int speex_echo_ctl(SpeexEchoState *st, int request, void *ptr) {
       for (i = 0; i < n; i++)
         filt[j * n + i] = PSHR32(MULT16_16(32767, st->wtmp[i]), WEIGHT_SHIFT - NORMALIZE_SCALEDOWN);
     }
-  }
-    break;
+  } break;
   default:
     speex_warning_int("Unknown speex_echo_ctl request: ", request);
     return -1;

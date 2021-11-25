@@ -1,5 +1,5 @@
 /* Copyright (C) 2007 Jean-Marc Valin
-      
+
    File: buffer.c
    This is a very simple ring buffer implementation. It is not thread-safe
    so you need to do your own locking.
@@ -35,8 +35,8 @@
 #include "config.h"
 #endif
 
-#include "os_support.h"
 #include "arch.h"
+#include "os_support.h"
 #include "speex/speex_buffer.h"
 
 struct SpeexBuffer_ {
@@ -48,8 +48,8 @@ struct SpeexBuffer_ {
 };
 
 EXPORT SpeexBuffer *speex_buffer_init(int size) {
-  SpeexBuffer *st = (SpeexBuffer *) speex_alloc(sizeof(SpeexBuffer));
-  st->data = (char *) speex_alloc(size);
+  SpeexBuffer *st = (SpeexBuffer *)speex_alloc(sizeof(SpeexBuffer));
+  st->data = (char *)speex_alloc(size);
   st->size = size;
   st->read_ptr = 0;
   st->write_ptr = 0;
@@ -65,7 +65,7 @@ EXPORT void speex_buffer_destroy(SpeexBuffer *st) {
 EXPORT int speex_buffer_write(SpeexBuffer *st, void *_data, int len) {
   int end;
   int end1;
-  char *data = (char *) _data;
+  char *data = (char *)_data;
   if (len > st->size) {
     data += len - st->size;
     len = st->size;
@@ -120,7 +120,7 @@ EXPORT int speex_buffer_writezeros(SpeexBuffer *st, int len) {
 
 EXPORT int speex_buffer_read(SpeexBuffer *st, void *_data, int len) {
   int end, end1;
-  char *data = (char *) _data;
+  char *data = (char *)_data;
   if (len > st->available) {
     SPEEX_MEMSET(data + st->available, 0, st->size - st->available);
     len = st->available;
@@ -142,18 +142,16 @@ EXPORT int speex_buffer_read(SpeexBuffer *st, void *_data, int len) {
   return len;
 }
 
-EXPORT int speex_buffer_get_available(SpeexBuffer *st) {
-  return st->available;
-}
+EXPORT int speex_buffer_get_available(SpeexBuffer *st) { return st->available; }
 
 EXPORT int speex_buffer_resize(SpeexBuffer *st, int len) {
   int old_len = st->size;
   if (len > old_len) {
-    st->data = (char *) speex_realloc(st->data, len);
+    st->data = (char *)speex_realloc(st->data, len);
     /* FIXME: move data/pointers properly for growing the buffer */
   } else {
     /* FIXME: move data/pointers properly for shrinking the buffer */
-    st->data = (char *) speex_realloc(st->data, len);
+    st->data = (char *)speex_realloc(st->data, len);
   }
   return len;
 }

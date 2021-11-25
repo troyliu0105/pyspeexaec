@@ -4,15 +4,24 @@ Copyright (c) 2005-2007, Jean-Marc Valin
 
 All rights reserved.
 
-Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
+following conditions are met:
 
-    * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-    * Neither the author nor the names of any contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+    * Redistributions of source code must retain the above copyright notice, this list of conditions and the following
+disclaimer.
+    * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the
+following disclaimer in the documentation and/or other materials provided with the distribution.
+    * Neither the author nor the names of any contributors may be used to endorse or promote products derived from this
+software without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES,
+INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -26,14 +35,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
  fixed or floating point complex numbers.  It also delares the kf_ internal functions.
  */
 
-static void kf_bfly2(
-    kiss_fft_cpx *Fout,
-    const size_t fstride,
-    const kiss_fft_cfg st,
-    int m,
-    int N,
-    int mm
-) {
+static void kf_bfly2(kiss_fft_cpx *Fout, const size_t fstride, const kiss_fft_cfg st, int m, int N, int mm) {
   kiss_fft_cpx *Fout2;
   kiss_fft_cpx *tw1;
   kiss_fft_cpx t;
@@ -67,7 +69,7 @@ static void kf_bfly2(
       Fout2 = Fout + m;
       tw1 = st->twiddles;
       for (j = 0; j < m; j++) {
-        C_MUL (t, *Fout2, *tw1);
+        C_MUL(t, *Fout2, *tw1);
         tw1 += fstride;
         C_SUB(*Fout2, *Fout, t);
         C_ADDTO(*Fout, t);
@@ -78,14 +80,7 @@ static void kf_bfly2(
   }
 }
 
-static void kf_bfly4(
-    kiss_fft_cpx *Fout,
-    const size_t fstride,
-    const kiss_fft_cfg st,
-    int m,
-    int N,
-    int mm
-) {
+static void kf_bfly4(kiss_fft_cpx *Fout, const size_t fstride, const kiss_fft_cfg st, int m, int N, int mm) {
   kiss_fft_cpx *tw1, *tw2, *tw3;
   kiss_fft_cpx scratch[6];
   const size_t m2 = 2 * m;
@@ -153,12 +148,7 @@ static void kf_bfly4(
   }
 }
 
-static void kf_bfly3(
-    kiss_fft_cpx *Fout,
-    const size_t fstride,
-    const kiss_fft_cfg st,
-    size_t m
-) {
+static void kf_bfly3(kiss_fft_cpx *Fout, const size_t fstride, const kiss_fft_cfg st, size_t m) {
   size_t k = m;
   const size_t m2 = 2 * m;
   kiss_fft_cpx *tw1, *tw2;
@@ -170,7 +160,9 @@ static void kf_bfly3(
 
   do {
     if (!st->inverse) {
-      C_FIXDIV(*Fout, 3); C_FIXDIV(Fout[m], 3); C_FIXDIV(Fout[m2], 3);
+      C_FIXDIV(*Fout, 3);
+      C_FIXDIV(Fout[m], 3);
+      C_FIXDIV(Fout[m2], 3);
     }
 
     C_MUL(scratch[1], Fout[m], *tw1);
@@ -198,12 +190,7 @@ static void kf_bfly3(
   } while (--k);
 }
 
-static void kf_bfly5(
-    kiss_fft_cpx *Fout,
-    const size_t fstride,
-    const kiss_fft_cfg st,
-    int m
-) {
+static void kf_bfly5(kiss_fft_cpx *Fout, const size_t fstride, const kiss_fft_cfg st, int m) {
   kiss_fft_cpx *Fout0, *Fout1, *Fout2, *Fout3, *Fout4;
   int u;
   kiss_fft_cpx scratch[13];
@@ -222,7 +209,11 @@ static void kf_bfly5(
   tw = st->twiddles;
   for (u = 0; u < m; ++u) {
     if (!st->inverse) {
-      C_FIXDIV(*Fout0, 5); C_FIXDIV(*Fout1, 5); C_FIXDIV(*Fout2, 5); C_FIXDIV(*Fout3, 5); C_FIXDIV(*Fout4, 5);
+      C_FIXDIV(*Fout0, 5);
+      C_FIXDIV(*Fout1, 5);
+      C_FIXDIV(*Fout2, 5);
+      C_FIXDIV(*Fout3, 5);
+      C_FIXDIV(*Fout4, 5);
     }
     scratch[0] = *Fout0;
 
@@ -265,13 +256,7 @@ static void kf_bfly5(
 }
 
 /* perform the butterfly for one stage of a mixed radix FFT */
-static void kf_bfly_generic(
-    kiss_fft_cpx *Fout,
-    const size_t fstride,
-    const kiss_fft_cfg st,
-    int m,
-    int p
-) {
+static void kf_bfly_generic(kiss_fft_cpx *Fout, const size_t fstride, const kiss_fft_cfg st, int m, int p) {
   int u, k, q1, q;
   kiss_fft_cpx *twiddles = st->twiddles;
   kiss_fft_cpx t;
@@ -298,7 +283,8 @@ static void kf_bfly_generic(
       Fout[k] = scratchbuf[0];
       for (q = 1; q < p; ++q) {
         twidx += fstride * k;
-        if (twidx >= Norig) twidx -= Norig;
+        if (twidx >= Norig)
+          twidx -= Norig;
         C_MUL(t, scratchbuf[q], twiddles[twidx]);
         C_ADDTO(Fout[k], t);
       }
@@ -307,15 +293,8 @@ static void kf_bfly_generic(
   }
 }
 
-static
-void kf_shuffle(
-    kiss_fft_cpx *Fout,
-    const kiss_fft_cpx *f,
-    const size_t fstride,
-    int in_stride,
-    int *factors,
-    const kiss_fft_cfg st
-) {
+static void kf_shuffle(kiss_fft_cpx *Fout, const kiss_fft_cpx *f, const size_t fstride, int in_stride, int *factors,
+                       const kiss_fft_cfg st) {
   const int p = *factors++; /* the radix  */
   const int m = *factors++; /* stage's fft length/p */
 
@@ -336,18 +315,8 @@ void kf_shuffle(
   }
 }
 
-static
-void kf_work(
-    kiss_fft_cpx *Fout,
-    const kiss_fft_cpx *f,
-    const size_t fstride,
-    int in_stride,
-    int *factors,
-    const kiss_fft_cfg st,
-    int N,
-    int s2,
-    int m2
-) {
+static void kf_work(kiss_fft_cpx *Fout, const kiss_fft_cpx *f, const size_t fstride, int in_stride, int *factors,
+                    const kiss_fft_cfg st, int N, int s2, int m2) {
   int i;
   kiss_fft_cpx *Fout_beg = Fout;
   const int p = *factors++; /* the radix  */
@@ -429,11 +398,10 @@ void kf_work(
 }
 
 /*  facbuf is populated by p1,m1,p2,m2, ...
-    where 
+    where
     p[i] * m[i] = m[i-1]
     m0 = n                  */
-static
-void kf_factor(int n, int *facbuf) {
+static void kf_factor(int n, int *facbuf) {
   int p = 4;
 
   /*factor out powers of 4, powers of 2, then any remaining primes */
@@ -450,8 +418,8 @@ void kf_factor(int n, int *facbuf) {
         p += 2;
         break;
       }
-      if (p > 32000 || (spx_int32_t) p * (spx_int32_t) p > n)
-        p = n;          /* no more factors, skip to end */
+      if (p > 32000 || (spx_int32_t)p * (spx_int32_t)p > n)
+        p = n; /* no more factors, skip to end */
     }
     n /= p;
     *facbuf++ = p;
@@ -467,14 +435,13 @@ void kf_factor(int n, int *facbuf) {
  * */
 kiss_fft_cfg kiss_fft_alloc(int nfft, int inverse_fft, void *mem, size_t *lenmem) {
   kiss_fft_cfg st = NULL;
-  size_t memneeded = sizeof(struct kiss_fft_state)
-      + sizeof(kiss_fft_cpx) * (nfft - 1); /* twiddle factors*/
+  size_t memneeded = sizeof(struct kiss_fft_state) + sizeof(kiss_fft_cpx) * (nfft - 1); /* twiddle factors*/
 
   if (lenmem == NULL) {
-    st = (kiss_fft_cfg) KISS_FFT_MALLOC(memneeded);
+    st = (kiss_fft_cfg)KISS_FFT_MALLOC(memneeded);
   } else {
     if (mem != NULL && *lenmem >= memneeded)
-      st = (kiss_fft_cfg) mem;
+      st = (kiss_fft_cfg)mem;
     *lenmem = memneeded;
   }
   if (st) {
@@ -482,11 +449,11 @@ kiss_fft_cfg kiss_fft_alloc(int nfft, int inverse_fft, void *mem, size_t *lenmem
     st->nfft = nfft;
     st->inverse = inverse_fft;
 #ifdef FIXED_POINT
-    for (i=0;i<nfft;++i) {
-        spx_word32_t phase = i;
-        if (!st->inverse)
-            phase = -phase;
-        kf_cexp2(st->twiddles+i, DIV32(SHL32(phase,17),nfft));
+    for (i = 0; i < nfft; ++i) {
+      spx_word32_t phase = i;
+      if (!st->inverse)
+        phase = -phase;
+      kf_cexp2(st->twiddles + i, DIV32(SHL32(phase, 17), nfft));
     }
 #else
     for (i = 0; i < nfft; ++i) {
@@ -514,7 +481,4 @@ void kiss_fft_stride(kiss_fft_cfg st, const kiss_fft_cpx *fin, kiss_fft_cpx *fou
   }
 }
 
-void kiss_fft(kiss_fft_cfg cfg, const kiss_fft_cpx *fin, kiss_fft_cpx *fout) {
-  kiss_fft_stride(cfg, fin, fout, 1);
-}
-
+void kiss_fft(kiss_fft_cfg cfg, const kiss_fft_cpx *fin, kiss_fft_cpx *fout) { kiss_fft_stride(cfg, fin, fout, 1); }

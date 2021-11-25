@@ -9,18 +9,18 @@
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions
    are met:
-   
+
    - Redistributions of source code must retain the above copyright
    notice, this list of conditions and the following disclaimer.
-   
+
    - Redistributions in binary form must reproduce the above copyright
    notice, this list of conditions and the following disclaimer in the
    documentation and/or other materials provided with the distribution.
-   
+
    - Neither the name of the Xiph.org Foundation nor the names of its
    contributors may be used to endorse or promote products derived from
    this software without specific prior written permission.
-   
+
    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
    ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
    LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -52,11 +52,8 @@ static inline float inner_product_single(const float *a, const float *b, unsigne
 }
 
 #define OVERRIDE_INTERPOLATE_PRODUCT_SINGLE
-static inline float interpolate_product_single(const float *a,
-                                               const float *b,
-                                               unsigned int len,
-                                               const spx_uint32_t oversample,
-                                               float *frac) {
+static inline float interpolate_product_single(const float *a, const float *b, unsigned int len,
+                                               const spx_uint32_t oversample, float *frac) {
   int i;
   float ret;
   __m128 sum = _mm_setzero_ps();
@@ -76,29 +73,28 @@ static inline float interpolate_product_single(const float *a,
 #include <emmintrin.h>
 #define OVERRIDE_INNER_PRODUCT_DOUBLE
 
-static inline double inner_product_double(const float *a, const float *b, unsigned int len)
-{
-   int i;
-   double ret;
-   __m128d sum = _mm_setzero_pd();
-   __m128 t;
-   for (i=0;i<len;i+=8)
-   {
-      t = _mm_mul_ps(_mm_loadu_ps(a+i), _mm_loadu_ps(b+i));
-      sum = _mm_add_pd(sum, _mm_cvtps_pd(t));
-      sum = _mm_add_pd(sum, _mm_cvtps_pd(_mm_movehl_ps(t, t)));
+static inline double inner_product_double(const float *a, const float *b, unsigned int len) {
+  int i;
+  double ret;
+  __m128d sum = _mm_setzero_pd();
+  __m128 t;
+  for (i = 0; i < len; i += 8) {
+    t = _mm_mul_ps(_mm_loadu_ps(a + i), _mm_loadu_ps(b + i));
+    sum = _mm_add_pd(sum, _mm_cvtps_pd(t));
+    sum = _mm_add_pd(sum, _mm_cvtps_pd(_mm_movehl_ps(t, t)));
 
-      t = _mm_mul_ps(_mm_loadu_ps(a+i+4), _mm_loadu_ps(b+i+4));
-      sum = _mm_add_pd(sum, _mm_cvtps_pd(t));
-      sum = _mm_add_pd(sum, _mm_cvtps_pd(_mm_movehl_ps(t, t)));
-   }
-   sum = _mm_add_sd(sum, _mm_unpackhi_pd(sum, sum));
-   _mm_store_sd(&ret, sum);
-   return ret;
+    t = _mm_mul_ps(_mm_loadu_ps(a + i + 4), _mm_loadu_ps(b + i + 4));
+    sum = _mm_add_pd(sum, _mm_cvtps_pd(t));
+    sum = _mm_add_pd(sum, _mm_cvtps_pd(_mm_movehl_ps(t, t)));
+  }
+  sum = _mm_add_sd(sum, _mm_unpackhi_pd(sum, sum));
+  _mm_store_sd(&ret, sum);
+  return ret;
 }
 
 #define OVERRIDE_INTERPOLATE_PRODUCT_DOUBLE
-static inline double interpolate_product_double(const float *a, const float *b, unsigned int len, const spx_uint32_t oversample, float *frac) {
+static inline double interpolate_product_double(const float *a, const float *b, unsigned int len,
+                                                const spx_uint32_t oversample, float *frac) {
   int i;
   double ret;
   __m128d sum;
@@ -106,15 +102,14 @@ static inline double interpolate_product_double(const float *a, const float *b, 
   __m128d sum2 = _mm_setzero_pd();
   __m128 f = _mm_loadu_ps(frac);
   __m128d f1 = _mm_cvtps_pd(f);
-  __m128d f2 = _mm_cvtps_pd(_mm_movehl_ps(f,f));
+  __m128d f2 = _mm_cvtps_pd(_mm_movehl_ps(f, f));
   __m128 t;
-  for(i=0;i<len;i+=2)
-  {
-    t = _mm_mul_ps(_mm_load1_ps(a+i), _mm_loadu_ps(b+i*oversample));
+  for (i = 0; i < len; i += 2) {
+    t = _mm_mul_ps(_mm_load1_ps(a + i), _mm_loadu_ps(b + i * oversample));
     sum1 = _mm_add_pd(sum1, _mm_cvtps_pd(t));
     sum2 = _mm_add_pd(sum2, _mm_cvtps_pd(_mm_movehl_ps(t, t)));
 
-    t = _mm_mul_ps(_mm_load1_ps(a+i+1), _mm_loadu_ps(b+(i+1)*oversample));
+    t = _mm_mul_ps(_mm_load1_ps(a + i + 1), _mm_loadu_ps(b + (i + 1) * oversample));
     sum1 = _mm_add_pd(sum1, _mm_cvtps_pd(t));
     sum2 = _mm_add_pd(sum2, _mm_cvtps_pd(_mm_movehl_ps(t, t)));
   }
