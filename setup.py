@@ -7,7 +7,7 @@ ParallelCompile("NPY_NUM_BUILD_JOBS").install()
 
 cpp_args = ['-std=c++11']
 srcs = sorted(glob("src/*.cpp") + glob("speex/src/*.c")) + ["py_module.cpp"]
-define_macros = [("FLOATING_POINT", ""), ("HAVE_CONFIG_H", "")]
+define_macros = [("FIXED_POINT", ""), ("HAVE_CONFIG_H", ""), ("FLOATING_POINT", "")]
 include_dirs = ["speex/include"]
 libraries = ['stdc++']
 
