@@ -1,3 +1,4 @@
+import sys
 from pybind11.setup_helpers import Pybind11Extension, build_ext, ParallelCompile
 from glob import glob
 from setuptools import setup, Extension
@@ -5,11 +6,18 @@ from setuptools import setup, Extension
 # Optional multithreaded build
 ParallelCompile("NPY_NUM_BUILD_JOBS").install()
 
-cpp_args = ['-std=c++11']
+cpp_args = []
 srcs = sorted(glob("src/*.cpp") + glob("speex/src/*.c")) + ["py_module.cpp"]
-define_macros = [("FIXED_POINT", ""), ("HAVE_CONFIG_H", ""), ("FLOATING_POINT", "")]
+define_macros = [
+    # ("FIXED_POINT", ""),
+    ("HAVE_CONFIG_H", ""),
+    ("FLOATING_POINT", "")
+]
 include_dirs = ["speex/include"]
-libraries = ['stdc++']
+if sys.platform != "win32":
+    libraries = ['stdc++']
+else:
+    libraries = []
 
 ext_modules = [
     Pybind11Extension(
@@ -19,7 +27,8 @@ ext_modules = [
         include_dirs=include_dirs,
         language='c++',
         extra_compile_args=cpp_args,
-        libraries=libraries
+        libraries=libraries,
+        cxx_std=11,
     ),
 ]
 
@@ -33,8 +42,8 @@ setup(
     author_email='troyliu0105@outlook.com',
     maintainer='Troy Liu',
     maintainer_email='troyliu0105@outlook.com',
-    url='https://github.com/xiongyihui/speexdsp-python',
-    download_url='https://pypi.python.org/pypi/pyspeexaec',
+    url='https://github.com/troyliu0105/pyspeexaec',
+    # download_url='https://pypi.python.org/pypi/pyspeexaec',
     packages=['pyspeexaec'],
     ext_modules=ext_modules,
     # Currently, build_ext only provides an optional "highest supported C++

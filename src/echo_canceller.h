@@ -21,6 +21,9 @@ public:
 
   ~EchoCanceller();
 
+  EchoCanceller(const EchoCanceller &) = delete;
+  EchoCanceller &operator=(const EchoCanceller &) = delete;
+
 private:
   SpeexEchoState *st{nullptr};
   SpeexPreprocessState *den{nullptr};

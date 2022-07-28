@@ -24,12 +24,12 @@ EchoCanceller::~EchoCanceller() {
   if (den) {
     speex_preprocess_state_destroy(den);
   }
-  delete e;
+  delete[] e;
 }
 
 std::string EchoCanceller::process(const std::string &near, const std::string &far) {
-  const auto *y = (const DType *)(near.data());
-  const auto *x = (const DType *)(far.data());
+  const auto *y = reinterpret_cast<const DType *>(near.data());
+  const auto *x = reinterpret_cast<const DType *>(far.data());
 
   // e = y - filter(x)
   speex_echo_cancellation(st, y, x, e);
@@ -38,14 +38,14 @@ std::string EchoCanceller::process(const std::string &near, const std::string &f
     speex_preprocess_run(den, e);
   }
 
-  return {(const char *)e, frames * sizeof(DType)};
+  return {reinterpret_cast<const char *>(e), frames * sizeof(DType)};
 }
 
 py::array_t<DType> EchoCanceller::process(const py::array_t<DType, py::array::c_style | py::array::forcecast> &near,
                                           const py::array_t<DType, py::array::c_style | py::array::forcecast> &far) {
 
-  const DType *y = static_cast<const DType *>(near.request(false).ptr);
-  const DType *x = static_cast<const DType *>(far.request(false).ptr);
+  const DType *y = reinterpret_cast<const DType *>(near.request(false).ptr);
+  const DType *x = reinterpret_cast<const DType *>(far.request(false).ptr);
   // e = y - filter(x)
   speex_echo_cancellation(st, y, x, e);
 
@@ -54,5 +54,6 @@ py::array_t<DType> EchoCanceller::process(const py::array_t<DType, py::array::c_
   }
   py::array_t<DType> out(frames);
   std::memcpy(out.request(true).ptr, e, frames * sizeof(DType));
+  out.reshape({this->frames / mics, mics});
   return out;
 }
