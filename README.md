@@ -5,6 +5,8 @@
 ## 安装
 
 ```shell
+# 需要使用 c++ 编译器进行 c/c++ 混编 (speex 是 c 源码)
+export CC=g++
 python setup.py install
 ```
 
