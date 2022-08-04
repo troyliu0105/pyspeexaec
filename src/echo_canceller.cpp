@@ -51,19 +51,20 @@ const int16_t *EchoCanceller::process(const int16_t *near, const int16_t *far) {
 }
 
 #ifndef NO_PYBIND11
-py::array_t<DType> EchoCanceller::process(const py::array_t<DType, py::array::c_style | py::array::forcecast> &near,
-                                          const py::array_t<DType, py::array::c_style | py::array::forcecast> &far) {
+py::array_t<int16_t>
+EchoCanceller::process(const py::array_t<int16_t, py::array::c_style | py::array::forcecast> &near,
+                       const py::array_t<int16_t, py::array::c_style | py::array::forcecast> &far) {
 
-  const DType *y = reinterpret_cast<const DType *>(near.request(false).ptr);
-  const DType *x = reinterpret_cast<const DType *>(far.request(false).ptr);
+  const int16_t *y = reinterpret_cast<const int16_t *>(near.request(false).ptr);
+  const int16_t *x = reinterpret_cast<const int16_t *>(far.request(false).ptr);
   // e = y - filter(x)
   speex_echo_cancellation(st, y, x, e);
 
   if (den) {
     speex_preprocess_run(den, e);
   }
-  py::array_t<DType> out(frames);
-  std::memcpy(out.request(true).ptr, e, frames * sizeof(DType));
+  py::array_t<int16_t> out(frames);
+  std::memcpy(out.request(true).ptr, e, frames * sizeof(int16_t));
   out.reshape({this->frames / mics, mics});
   return out;
 }
