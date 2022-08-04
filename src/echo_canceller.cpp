@@ -16,7 +16,7 @@ EchoCanceller::EchoCanceller(int frame_size, int filter_length, int sample_rate,
   frames = frame_size * mics;
   this->mics = mics;
   this->speakers = speakers;
-  e = new DType[frames];
+  e = new int16_t[frames];
 }
 
 EchoCanceller::~EchoCanceller() {
@@ -28,8 +28,8 @@ EchoCanceller::~EchoCanceller() {
 }
 
 std::string EchoCanceller::process(const std::string &near, const std::string &far) {
-  const auto *y = reinterpret_cast<const DType *>(near.data());
-  const auto *x = reinterpret_cast<const DType *>(far.data());
+  const auto *y = reinterpret_cast<const int16_t *>(near.data());
+  const auto *x = reinterpret_cast<const int16_t *>(far.data());
 
   // e = y - filter(x)
   speex_echo_cancellation(st, y, x, e);
@@ -38,10 +38,10 @@ std::string EchoCanceller::process(const std::string &near, const std::string &f
     speex_preprocess_run(den, e);
   }
 
-  return {reinterpret_cast<const char *>(e), frames * sizeof(DType)};
+  return {reinterpret_cast<const char *>(e), frames * sizeof(int16_t)};
 }
 
-const DType *EchoCanceller::process(const DType *near, const DType *far) {
+const int16_t *EchoCanceller::process(const int16_t *near, const int16_t *far) {
   speex_echo_cancellation(st, near, far, e);
 
   if (den) {

@@ -12,7 +12,6 @@
 #ifndef NO_PYBIND11
 namespace py = pybind11;
 #endif
-using DType = int16_t;
 
 class EchoCanceller {
 public:
@@ -20,11 +19,11 @@ public:
                          int speakers = 1, bool use_preprocess = false);
 
   std::string process(const std::string &near, const std::string &far);
-  const DType *process(const DType *near, const DType *far);
+  const int16_t *process(const int16_t *near, const int16_t *far);
 
 #ifndef NO_PYBIND11
-  py::array_t<DType> process(const py::array_t<DType, py::array::c_style | py::array::forcecast> &near,
-                             const py::array_t<DType, py::array::c_style | py::array::forcecast> &far);
+  py::array_t<int16_t> process(const py::array_t<int16_t, py::array::c_style | py::array::forcecast> &near,
+                               const py::array_t<int16_t, py::array::c_style | py::array::forcecast> &far);
 #endif
 
   ~EchoCanceller();
@@ -36,7 +35,7 @@ private:
   SpeexEchoState *st{nullptr};
   SpeexPreprocessState *den{nullptr};
 
-  DType *e{nullptr};
+  int16_t *e{nullptr};
   int frames{0};
   int mics{0};
   int speakers{0};
