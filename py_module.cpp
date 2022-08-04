@@ -18,8 +18,8 @@ PYBIND11_MODULE(pyspeexaec, m) {
                &EchoCanceller::process),
            py::arg("rec"), py::arg("ref"))
       .def("process",
-           static_cast<py::array_t<DType> (EchoCanceller::*)(
-               const py::array_t<DType, py::array::c_style | py::array::forcecast> &,
-               const py::array_t<DType, py::array::c_style | py::array::forcecast> &)>(&EchoCanceller::process),
+           static_cast<py::array_t<int16_t> (EchoCanceller::*)(
+               const py::array_t<int16_t, py::array::c_style | py::array::forcecast> &,
+               const py::array_t<int16_t, py::array::c_style | py::array::forcecast> &)>(&EchoCanceller::process),
            py::arg("rec"), py::arg("ref"), py::return_value_policy::move);
 }
