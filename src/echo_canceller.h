@@ -15,9 +15,24 @@ namespace py = pybind11;
 
 class EchoCanceller {
 public:
+  /**
+   * 初始化 speex 回声消除。
+   * @param frame_size      帧长度
+   * @param filter_length   滤波器长度
+   * @param sample_rate     采样率
+   * @param mics            麦克风数量
+   * @param speakers        扬声器数量
+   * @param use_preprocess  是否采用后处理增强
+   */
   explicit EchoCanceller(int frame_size = 160, int filter_length = 1600, int sample_rate = 16000, int mics = 1,
                          int speakers = 1, bool use_preprocess = false);
 
+  /**
+   * 对 frame_size 长度的音频进行回声消除
+   * @param near    近端（录音信号）
+   * @param far     远端（参考信号）
+   * @return
+   */
   std::string process(const std::string &near, const std::string &far);
   const int16_t *process(const int16_t *near, const int16_t *far);
 
