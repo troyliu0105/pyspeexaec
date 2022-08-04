@@ -4,10 +4,14 @@
 #include "speex/speex_echo.h"
 #include "speex/speex_preprocess.h"
 #include <cstdint>
+#ifndef NO_PYBIND11
 #include <pybind11/numpy.h>
+#endif
 #include <string>
 
+#ifndef NO_PYBIND11
 namespace py = pybind11;
+#endif
 using DType = int16_t;
 
 class EchoCanceller {
@@ -16,8 +20,12 @@ public:
                          int speakers = 1, bool use_preprocess = false);
 
   std::string process(const std::string &near, const std::string &far);
+  const DType *process(const DType *near, const DType *far);
+
+#ifndef NO_PYBIND11
   py::array_t<DType> process(const py::array_t<DType, py::array::c_style | py::array::forcecast> &near,
                              const py::array_t<DType, py::array::c_style | py::array::forcecast> &far);
+#endif
 
   ~EchoCanceller();
 

@@ -2,16 +2,25 @@ cmake_minimum_required(VERSION 3.15)
 project(SpeexAEC)
 
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 find_package(pybind11 REQUIRED)
 
 aux_source_directory(speex/src SPEEX_SRC)
 aux_source_directory(src AEC_SRC)
 
-add_library(speexaec SHARED ${AEC_SRC} ${SPEEX_SRC})
-target_compile_definitions(speexaec PUBLIC -DFLOATING_POINT -DHAVE_CONFIG_H)
-target_link_directories(speexaec PUBLIC libspeexdsp)
+add_library(speexaec SHARED ${SPEEX_SRC})
+target_compile_definitions(speexaec PUBLIC -DFLOATING_POINT PUBLIC -DHAVE_CONFIG_H)
 target_include_directories(speexaec PUBLIC speex/include)
+
+add_library(speexaec-static STATIC ${SPEEX_SRC})
+target_compile_definitions(speexaec-static PUBLIC -DFLOATING_POINT PUBLIC -DHAVE_CONFIG_H)
+target_include_directories(speexaec-static PUBLIC speex/include)
+
+add_library(echocanceller SHARED ${AEC_SRC})
+target_compile_definitions(echocanceller PUBLIC PUBLIC -DNO_PYBIND11)
+target_include_directories(echocanceller PUBLIC speex/include)
+target_link_libraries(echocanceller PUBLIC speexaec-static)
 
 add_executable(Main main.cpp)
 target_link_libraries(Main PUBLIC speexaec)

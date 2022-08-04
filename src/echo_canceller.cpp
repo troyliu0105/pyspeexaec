@@ -41,6 +41,16 @@ std::string EchoCanceller::process(const std::string &near, const std::string &f
   return {reinterpret_cast<const char *>(e), frames * sizeof(DType)};
 }
 
+const DType *EchoCanceller::process(const DType *near, const DType *far) {
+  speex_echo_cancellation(st, near, far, e);
+
+  if (den) {
+    speex_preprocess_run(den, e);
+  }
+  return e;
+}
+
+#ifndef NO_PYBIND11
 py::array_t<DType> EchoCanceller::process(const py::array_t<DType, py::array::c_style | py::array::forcecast> &near,
                                           const py::array_t<DType, py::array::c_style | py::array::forcecast> &far) {
 
@@ -57,3 +67,4 @@ py::array_t<DType> EchoCanceller::process(const py::array_t<DType, py::array::c_
   out.reshape({this->frames / mics, mics});
   return out;
 }
+#endif
