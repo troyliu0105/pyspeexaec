@@ -31,4 +31,4 @@ out = aec.process(rec, ref)
 
 ### C/C++ 版本的使用
 
-具体使用方法参考 `EchoCanceller` 实现
+具体使用方法参考 `EchoCanceller` 实现, 以及 `main.cpp`

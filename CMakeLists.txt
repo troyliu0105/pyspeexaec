@@ -18,12 +18,12 @@ target_compile_definitions(speexaec-static PUBLIC -DFLOATING_POINT PUBLIC -DHAVE
 target_include_directories(speexaec-static PUBLIC speex/include)
 
 add_library(echocanceller SHARED ${AEC_SRC})
-target_compile_definitions(echocanceller PUBLIC PUBLIC -DNO_PYBIND11)
+target_compile_definitions(echocanceller PUBLIC -DFLOATING_POINT PUBLIC -DNO_PYBIND11)
 target_include_directories(echocanceller PUBLIC speex/include)
 target_link_libraries(echocanceller PUBLIC speexaec-static)
 
 add_executable(Main main.cpp)
-target_link_libraries(Main PUBLIC speexaec)
+target_link_libraries(Main PUBLIC echocanceller)
 
 pybind11_add_module(pyspeexaec py_module.cpp ${AEC_SRC} ${SPEEX_SRC})
 target_include_directories(pyspeexaec PUBLIC speex/include)
