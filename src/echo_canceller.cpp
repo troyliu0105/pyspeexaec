@@ -31,22 +31,13 @@ std::string EchoCanceller::process(const std::string &near, const std::string &f
   const auto *y = reinterpret_cast<const int16_t *>(near.data());
   const auto *x = reinterpret_cast<const int16_t *>(far.data());
 
-  // e = y - filter(x)
-  speex_echo_cancellation(st, y, x, e);
-
-  if (den) {
-    speex_preprocess_run(den, e);
-  }
+  this->_process(y, x);
 
   return {reinterpret_cast<const char *>(e), frames * sizeof(int16_t)};
 }
 
 const int16_t *EchoCanceller::process(const int16_t *near, const int16_t *far) {
-  speex_echo_cancellation(st, near, far, e);
-
-  if (den) {
-    speex_preprocess_run(den, e);
-  }
+  this->_process(near, far);
   return e;
 }
 
@@ -57,15 +48,19 @@ EchoCanceller::process(const py::array_t<int16_t, py::array::c_style | py::array
 
   const int16_t *y = reinterpret_cast<const int16_t *>(near.request(false).ptr);
   const int16_t *x = reinterpret_cast<const int16_t *>(far.request(false).ptr);
-  // e = y - filter(x)
-  speex_echo_cancellation(st, y, x, e);
-
-  if (den) {
-    speex_preprocess_run(den, e);
-  }
+  this->_process(y, x);
   py::array_t<int16_t> out(frames);
   std::memcpy(out.request(true).ptr, e, frames * sizeof(int16_t));
   out.reshape({this->frames / mics, mics});
   return out;
 }
 #endif
+
+void EchoCanceller::_process(const int16_t *near, const int16_t *far) {
+  // e = y - filter(x)
+  speex_echo_cancellation(st, near, far, e);
+
+  if (den) {
+    speex_preprocess_run(den, e);
+  }
+}

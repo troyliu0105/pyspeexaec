@@ -47,6 +47,8 @@ public:
   EchoCanceller &operator=(const EchoCanceller &) = delete;
 
 private:
+  inline void _process(const int16_t *near, const int16_t *far);
+
   SpeexEchoState *st{nullptr};
   SpeexPreprocessState *den{nullptr};
 
