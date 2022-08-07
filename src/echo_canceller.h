@@ -1,8 +1,6 @@
 #ifndef __ECHO_CANCELLER_H__
 #define __ECHO_CANCELLER_H__
 
-#include "speex/speex_echo.h"
-#include "speex/speex_preprocess.h"
 #include <cstdint>
 #ifndef NO_PYBIND11
 #include <pybind11/numpy.h>
@@ -49,8 +47,8 @@ public:
 private:
   inline void _process(const int16_t *near, const int16_t *far);
 
-  SpeexEchoState *st{nullptr};
-  SpeexPreprocessState *den{nullptr};
+  void *st{nullptr};
+  void *den{nullptr};
 
   int16_t *e{nullptr};
   int frames{0};

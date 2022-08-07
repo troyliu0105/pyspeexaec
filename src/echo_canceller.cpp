@@ -1,3 +1,5 @@
+#include "speex/speex_echo.h"
+#include "speex/speex_preprocess.h"
 #include <cstdint>
 #include <iostream>
 
@@ -6,11 +8,12 @@
 EchoCanceller::EchoCanceller(int frame_size, int filter_length, int sample_rate, int mics, int speakers,
                              bool use_preprocess) {
   st = speex_echo_state_init_mc(frame_size, filter_length, mics, speakers);
-  speex_echo_ctl(st, SPEEX_ECHO_SET_SAMPLING_RATE, &sample_rate);
+  speex_echo_ctl(static_cast<SpeexEchoState *>(st), SPEEX_ECHO_SET_SAMPLING_RATE, &sample_rate);
 
   if (use_preprocess) {
     den = speex_preprocess_state_init(frame_size, sample_rate);
-    speex_preprocess_ctl(den, SPEEX_PREPROCESS_SET_ECHO_STATE, st);
+    speex_preprocess_ctl(static_cast<SpeexPreprocessState *>(den), SPEEX_PREPROCESS_SET_ECHO_STATE,
+                         static_cast<SpeexEchoState *>(st));
   }
 
   frames = frame_size * mics;
@@ -20,9 +23,9 @@ EchoCanceller::EchoCanceller(int frame_size, int filter_length, int sample_rate,
 }
 
 EchoCanceller::~EchoCanceller() {
-  speex_echo_state_destroy(st);
+  speex_echo_state_destroy(static_cast<SpeexEchoState *>(st));
   if (den) {
-    speex_preprocess_state_destroy(den);
+    speex_preprocess_state_destroy(static_cast<SpeexPreprocessState *>(den));
   }
   delete[] e;
 }
@@ -58,9 +61,9 @@ EchoCanceller::process(const py::array_t<int16_t, py::array::c_style | py::array
 
 void EchoCanceller::_process(const int16_t *near, const int16_t *far) {
   // e = y - filter(x)
-  speex_echo_cancellation(st, near, far, e);
+  speex_echo_cancellation(static_cast<SpeexEchoState *>(st), near, far, e);
 
   if (den) {
-    speex_preprocess_run(den, e);
+    speex_preprocess_run(static_cast<SpeexPreprocessState *>(den), e);
   }
 }
